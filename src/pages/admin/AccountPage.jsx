@@ -5,17 +5,6 @@ import Icon from "../../components/Icon";
 import { Alert, Field } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
-import { formatDateTime } from "../../lib/format";
-
-function initials(user) {
-  const name = user?.full_name || user?.username || "?";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
-}
 
 export default function AccountPage() {
   const { user, logout } = useAuth();
@@ -38,7 +27,7 @@ export default function AccountPage() {
     setBusy(true);
     try {
       await api.changeOwnPassword(current, next);
-      setNotice("Password changed. Please sign in again with the new password.");
+      setNotice("Password changed successfully! Redirecting to login…");
       setCurrent("");
       setNext("");
       setConfirm("");
@@ -57,11 +46,13 @@ export default function AccountPage() {
     <AppShell narrow>
       <div className="page-head">
         <div>
-          <h1 className="page-title">My profile</h1>
-          <p className="page-sub">Your account and password.</p>
+          <h1 className="page-title">My Account</h1>
+          <p className="page-sub">
+            Signed in as <b>{user?.full_name || user?.username}</b> (@{user?.username} · {user?.role})
+          </p>
         </div>
         <Link className="btn ghost" to="/admin/employees">
-          <Icon name="arrow-left" /> Back to console
+          <Icon name="arrow-left" /> Back to Console
         </Link>
       </div>
 
@@ -72,69 +63,55 @@ export default function AccountPage() {
         {notice}
       </Alert>
 
-      <div className="card">
-        <div className="identity">
-          <div className="avatar">{initials(user)}</div>
-          <div className="who">
-            <h1 style={{ fontSize: 20 }}>{user?.full_name || user?.username}</h1>
-            <div className="sub">
-              @{user?.username} · <span className="pill info">{user?.role}</span>
-            </div>
-          </div>
-        </div>
-        <dl className="kv" style={{ marginTop: 16 }}>
-          <dt>Username</dt>
-          <dd className="mono">{user?.username}</dd>
-          <dt>Full name</dt>
-          <dd>{user?.full_name || "—"}</dd>
-          <dt>Role</dt>
-          <dd>{user?.role}</dd>
-          <dt>Last login</dt>
-          <dd>{user?.last_login_at ? formatDateTime(user.last_login_at) : "—"}</dd>
-        </dl>
-      </div>
-
-      <div className="card" style={{ maxWidth: 470 }}>
+      {/* Main Single Card: Change Password */}
+      <div className="card" style={{ maxWidth: 520, margin: "0 auto" }}>
         <div className="card-head">
           <div className="card-title">
             <span className="title-ico">
               <Icon name="key" />
             </span>
-            Change password
+            Change Password
           </div>
         </div>
+
         <form onSubmit={submit}>
-          <Field label="Current password" required>
+          <Field label="Current Password" required>
             <input
               type="password"
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
+              placeholder="Enter current password"
               required
               autoComplete="current-password"
             />
           </Field>
-          <Field label="New password" required hint="Minimum 6 characters">
+
+          <Field label="New Password" required hint="Minimum 6 characters">
             <input
               type="password"
               value={next}
               onChange={(e) => setNext(e.target.value)}
+              placeholder="Enter new password"
               required
               minLength={6}
               autoComplete="new-password"
             />
           </Field>
-          <Field label="Confirm new password" required>
+
+          <Field label="Confirm New Password" required>
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Confirm new password"
               required
               minLength={6}
               autoComplete="new-password"
             />
           </Field>
-          <button className="btn primary" type="submit" disabled={busy}>
-            <Icon name="check" /> {busy ? "Saving…" : "Update password"}
+
+          <button className="btn primary lg block" type="submit" disabled={busy} style={{ marginTop: 12 }}>
+            <Icon name="check" /> {busy ? "Updating Password…" : "Update Password"}
           </button>
         </form>
       </div>

@@ -144,9 +144,9 @@ export default function TrainingsPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Code</th>
+                    <th className="hide-sm">Code</th>
                     <th>Training</th>
-                    <th>Category</th>
+                    <th className="hide-sm">Category</th>
                     <th>Validity</th>
                     <th>Status</th>
                     <th />
@@ -155,17 +155,17 @@ export default function TrainingsPage() {
                 <tbody>
                   {items.map((t) => (
                     <tr key={t.id}>
-                      <td className="mono">{t.code}</td>
+                      <td className="mono hide-sm">{t.code}</td>
                       <td>
                         <div style={{ fontWeight: 600 }}>{t.name}</div>
-                        {t.description && (
-                          <div className="tiny muted">{t.description}</div>
-                        )}
+                        <div className="tiny muted mono" style={{ marginTop: 2 }}>
+                          {t.code}
+                        </div>
                       </td>
-                      <td>{t.category || "—"}</td>
+                      <td className="hide-sm">{t.category || "—"}</td>
                       <td>
                         {t.validity_months
-                          ? `${t.validity_months} month(s)`
+                          ? `${t.validity_months} mo`
                           : "No expiry"}
                       </td>
                       <td>

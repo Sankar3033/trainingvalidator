@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Icon from "../components/Icon";
+import Logo from "../components/Logo";
 import { Alert } from "../components/ui";
 import { useAuth } from "../lib/auth";
 import { ORG_NAME } from "../lib/config";
@@ -36,10 +37,10 @@ export default function LoginPage() {
   return (
     <AppShell narrow>
       <div className="auth-wrap">
-        <div className="card">
+        <div className="card auth-card">
           <div className="auth-head">
-            <div className="brand-mark">TV</div>
-            <h1 style={{ fontSize: 21 }}>Admin console login</h1>
+            <Logo height={42} style={{ margin: "0 auto 16px" }} />
+            <h1>Admin console login</h1>
             <p className="small muted">{ORG_NAME}</p>
           </div>
 

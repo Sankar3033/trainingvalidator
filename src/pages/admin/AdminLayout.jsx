@@ -7,6 +7,7 @@ export default function AdminLayout() {
   const tabs = [
     { to: "/admin/employees", label: "Employees & badges" },
     { to: "/admin/trainings", label: "Training list" },
+    { to: "/admin/card", label: "Card config" },
     ...(isSuperadmin ? [{ to: "/admin/users", label: "Admin users" }] : []),
   ];
 

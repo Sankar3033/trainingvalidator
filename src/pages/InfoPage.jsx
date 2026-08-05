@@ -27,9 +27,12 @@ function TrainingRow({ t }) {
         </td>
         <td className="tr-name">
           <b>{t.name}</b>
-          <span className="code">{t.code}</span>
+          <span className="code">
+            {t.code}
+            {t.category ? ` · ${t.category}` : ""}
+          </span>
         </td>
-        <td>
+        <td className="hide-sm">
           {t.category ? <span className="cat-link">{t.category}</span> : "—"}
         </td>
         <td>{formatDate(t.completed_on)}</td>
@@ -171,7 +174,7 @@ export default function InfoPage() {
                 <Icon name="refresh" /> Try again
               </button>
               <Link className="btn primary" to="/">
-                <Icon name="qrcode" /> Scan next
+                <Icon name="barcode" /> Search another
               </Link>
             </div>
           </div>
@@ -235,7 +238,7 @@ export default function InfoPage() {
                       <tr>
                         <th />
                         <th>Training</th>
-                        <th>Category</th>
+                        <th className="hide-sm">Category</th>
                         <th>Completed</th>
                         <th>Valid till</th>
                         <th>Status</th>
@@ -309,7 +312,7 @@ export default function InfoPage() {
                 style={{ flex: 1 }}
                 onClick={() => navigate("/")}
               >
-                <Icon name="qrcode" /> Scan next
+                <Icon name="barcode" /> Search another badge
               </button>
               <button className="btn lg" onClick={load} title="Reload this record">
                 <Icon name="refresh" />

@@ -1,0 +1,434 @@
+/* ==========================================================
+   TRAININGS PROVIDED
+   Companion sheet to the Safety Passport card.
+   --radius drives every corner: 0 = squared (matches the
+   passport card), 14px = the softer look of the reference.
+========================================================== */
+
+:root{
+    --green:#2f9e4b;
+    --green-dark:#26833e;
+    --green-deep:#166f30;
+    --green-pale:#d3e9d9;
+    --navy:#123c4d;
+    --navy-deep:#0e3141;
+    --ink:#152a35;
+    --line:#e2e4e5;
+    --page:#e9e9e9;
+
+    --radius:0px;
+    --card-w:1600px;
+}
+
+/* ==========================================================
+   RESET
+========================================================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+}
+
+html,body{ min-height:100%; }
+
+body{
+    background:var(--page);
+    font-family:'Barlow Semi Condensed','Inter',system-ui,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:40px;
+}
+
+::selection{ background:var(--green); color:#fff; }
+
+.sprite{ position:absolute; width:0; height:0; overflow:hidden; }
+
+/* ==========================================================
+   CARD
+========================================================== */
+
+.card{
+    position:relative;
+    width:var(--card-w);
+    aspect-ratio:16 / 9;
+    background:#fff;
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 18px 45px rgba(0,0,0,.15);
+    transition:box-shadow .25s;
+}
+
+.card:hover{ box-shadow:0 24px 60px rgba(0,0,0,.18); }
+
+.sheet{
+    position:relative;
+    z-index:5;
+    height:100%;
+    padding:34px 120px 34px 122px;
+    display:flex;
+    flex-direction:column;
+}
+
+/* ==========================================================
+   CORNER GEOMETRY
+   Concentric 45° triangles read as diagonal bands.
+========================================================== */
+
+.corner{
+    position:absolute;
+    z-index:1;
+    pointer-events:none;
+}
+
+.corner span{ position:absolute; inset:0; display:block; }
+
+/* ---- top left: dotted corner, then three diagonal bands ---- */
+.corner.tl{ top:0; left:0; width:290px; height:290px; }
+
+.corner.tl .c-dots{
+    clip-path:polygon(0 0, 118px 0, 0 118px);
+    background-image:radial-gradient(circle, rgba(18,105,48,.5) 1.4px, transparent 1.4px);
+    background-size:13px 13px;
+}
+.corner.tl .c1{ background:var(--green);      clip-path:polygon(64px 0, 150px 0, 0 150px, 0 64px); }
+.corner.tl .c2{ background:var(--green-deep); clip-path:polygon(150px 0, 216px 0, 0 216px, 0 150px); }
+.corner.tl .c3{ background:var(--green-pale); clip-path:polygon(216px 0, 286px 0, 0 286px, 0 216px); }
+
+/* ---- bottom left: navy corner with dots, green band along the edge ---- */
+.corner.bl{ bottom:0; left:0; width:240px; height:240px; }
+
+.corner.bl .c1{ background:var(--navy-deep); clip-path:polygon(0 240px, 0 70px, 176px 240px); }
+.corner.bl .c-dots{
+    clip-path:polygon(0 240px, 0 150px, 120px 240px);
+    background-image:radial-gradient(circle, rgba(72,190,96,.9) 1.4px, transparent 1.4px);
+    background-size:13px 13px;
+}
+.corner.bl .c2{ background:var(--green); clip-path:polygon(0 70px, 0 34px, 210px 240px, 176px 240px); }
+
+/* ---- bottom right: green corner, then two bands ---- */
+.corner.br{ bottom:0; right:0; width:260px; height:260px; }
+
+.corner.br .c1{ background:var(--green);      clip-path:polygon(260px 260px, 260px 90px, 90px 260px); }
+.corner.br .c2{ background:var(--green-deep); clip-path:polygon(260px 90px, 260px 46px, 46px 260px, 90px 260px); }
+.corner.br .c3{ background:var(--green-pale); clip-path:polygon(260px 46px, 260px 0, 0 260px, 46px 260px); }
+
+/* ==========================================================
+   HEADER
+========================================================== */
+
+.head{ text-align:center; }
+
+.head-title{
+    font-family:'Barlow Condensed','Inter',sans-serif;
+    font-size:84px;
+    font-weight:800;
+    line-height:1;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+
+.head-title .ink{ color:var(--ink); }
+.head-title .green{ color:var(--green); }
+
+.head-rule{
+    margin-top:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+}
+
+.head-rule .line{
+    display:block;
+    width:290px;
+    height:2px;
+    background:var(--green-deep);
+}
+
+.head-rule .dot{
+    display:block;
+    width:13px;
+    height:13px;
+    border-radius:50%;
+    background:var(--green);
+}
+
+/* ==========================================================
+   TRAINING GRID
+========================================================== */
+
+.grid{
+    flex:1;
+    min-height:0;
+    margin-top:22px;
+    display:grid;
+    grid-template-columns:1fr 1px 1fr;
+    column-gap:48px;
+}
+
+.col{
+    display:flex;
+    flex-direction:column;
+}
+
+.col-divider{ background:var(--line); }
+
+/* ---------- row ---------- */
+
+.row{
+    flex:1;
+    position:relative;
+    display:grid;
+    grid-template-columns:92px 1fr 44px;
+    align-items:center;
+    column-gap:26px;
+    cursor:pointer;
+}
+
+.row::after{
+    content:"";
+    position:absolute;
+    left:118px;
+    right:0;
+    bottom:0;
+    height:1px;
+    background:var(--line);
+}
+
+.row:last-child::after{ display:none; }
+
+.tile{
+    width:92px;
+    height:92px;
+    border:1px solid #dcdedf;
+    border-radius:var(--radius);
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--green);
+    transition:.25s;
+}
+
+.tile svg{
+    width:54px;
+    height:54px;
+    display:block;
+}
+
+.row:hover .tile{ border-color:var(--green); }
+
+.row-label{
+    font-size:29px;
+    font-weight:700;
+    color:var(--ink);
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    line-height:1.1;
+}
+
+/* ==========================================================
+   CHECKBOX
+========================================================== */
+
+.check{
+    appearance:none;
+    -webkit-appearance:none;
+    width:44px;
+    height:44px;
+    flex:0 0 auto;
+    margin:0;
+    border:2px solid var(--green);
+    border-radius:var(--radius);
+    background:#fff;
+    cursor:pointer;
+    position:relative;
+    transition:.18s;
+}
+
+.check:hover{ background:#f1faf4; }
+
+.check:checked{
+    background:var(--green);
+    border-color:var(--green);
+}
+
+.check:checked::after{
+    content:"";
+    position:absolute;
+    left:12px;
+    top:11px;
+    width:18px;
+    height:9px;
+    border-left:3px solid #fff;
+    border-bottom:3px solid #fff;
+    transform:rotate(-45deg);
+}
+
+.check:focus-visible{
+    outline:3px solid #0a6fd8;
+    outline-offset:3px;
+}
+
+/* ==========================================================
+   FOOTER
+========================================================== */
+
+.foot{
+    margin-top:20px;
+    padding-top:26px;
+    border-top:1px solid var(--line);
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:center;
+    column-gap:40px;
+}
+
+.violations{
+    display:flex;
+    align-items:center;
+    gap:24px;
+    padding-left:100px;
+}
+
+.violations-icon{
+    width:62px;
+    height:62px;
+    flex:0 0 auto;
+    color:var(--green);
+}
+
+.violations-label{
+    font-size:29px;
+    font-weight:700;
+    color:var(--ink);
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    white-space:nowrap;
+}
+
+.violations-boxes{
+    display:flex;
+    gap:26px;
+    margin-left:36px;
+}
+
+.foot-logo{
+    width:222px;
+    max-width:100%;
+    display:block;
+    margin-right:20px;
+    user-select:none;
+    pointer-events:none;
+}
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width:1700px){
+    .card{ width:95vw; }
+}
+
+@media (max-width:1450px){
+    .sheet{ padding:28px 90px; }
+
+    .head-title{ font-size:66px; }
+    .head-rule .line{ width:210px; }
+
+    .grid{ column-gap:36px; margin-top:16px; }
+    .row{ grid-template-columns:74px 1fr 38px; column-gap:20px; }
+    .row::after{ left:94px; }
+    .tile{ width:74px; height:74px; }
+    .tile svg{ width:44px; height:44px; }
+    .row-label{ font-size:24px; }
+
+    .check{ width:38px; height:38px; }
+    .check:checked::after{ left:10px; top:9px; width:15px; height:8px; }
+
+    .violations{ padding-left:60px; gap:18px; }
+    .violations-icon{ width:52px; height:52px; }
+    .violations-label{ font-size:24px; }
+    .violations-boxes{ gap:20px; margin-left:26px; }
+    .foot-logo{ width:180px; }
+}
+
+@media (max-width:1100px){
+    body{ padding:20px; }
+
+    .card{ aspect-ratio:auto; }
+    .sheet{ padding:120px 48px 60px; }
+
+    .head-title{ font-size:52px; }
+    .head-rule .line{ width:120px; }
+
+    .grid{
+        grid-template-columns:1fr;
+        row-gap:0;
+    }
+    .col-divider{ display:none; }
+
+    .col + .col .row:first-child::before{
+        content:"";
+        position:absolute;
+        left:118px;
+        right:0;
+        top:0;
+        height:1px;
+        background:var(--line);
+    }
+    .col:first-of-type .row:last-child::after{ display:block; }
+
+    .row{ min-height:104px; }
+
+    .foot{
+        grid-template-columns:1fr;
+        row-gap:28px;
+        justify-items:start;
+    }
+    .violations{ padding-left:0; flex-wrap:wrap; }
+    .foot-logo{ margin:0; }
+}
+
+@media (max-width:640px){
+    .sheet{ padding:100px 24px 48px; }
+
+    .head-title{ font-size:38px; }
+    .head-rule .line{ width:60px; }
+
+    .row{
+        grid-template-columns:58px 1fr 34px;
+        column-gap:16px;
+        min-height:88px;
+    }
+    .row::after,
+    .col + .col .row:first-child::before{ left:74px; }
+    .tile{ width:58px; height:58px; }
+    .tile svg{ width:34px; height:34px; }
+    .row-label{ font-size:19px; }
+
+    .check{ width:34px; height:34px; }
+    .check:checked::after{ left:9px; top:8px; width:13px; height:7px; }
+
+    .violations-label{ font-size:19px; }
+    .violations-icon{ width:42px; height:42px; }
+    .violations-boxes{ margin-left:0; }
+}
+
+@media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; animation:none !important; }
+}
+
+/* ==========================================================
+   PRINT
+========================================================== */
+
+@media print{
+    body{ background:#fff; padding:0; }
+    .card{ box-shadow:none; width:100%; }
+    .check{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Schneider Electric">
+  <rect width="512" height="512" rx="14" fill="#3DCD58"/>
+  <text x="256" y="232" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-weight="700" font-size="86" fill="#ffffff" letter-spacing="-2">Schneider</text>
+  <!-- S-hook mark -->
+  <g fill="#ffffff" transform="translate(150 262)">
+    <path d="M14 22 C14 8 26 0 44 0 C58 0 68 4 74 12 L60 24 C56 18 50 15 43 15
+             C36 15 31 18 31 24 C31 38 78 30 78 56 C78 72 65 80 46 80
+             C31 80 20 75 13 65 L27 53 C32 61 39 65 47 65 C55 65 61 61 61 55
+             C61 41 14 49 14 22 Z"/>
+  </g>
+  <text x="292" y="300" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-weight="400" font-size="58" fill="#ffffff" letter-spacing="10">Electric</text>
+</svg>

@@ -91,8 +91,13 @@ export const api = {
   // ---- meta / public -----------------------------------------------------
   health: () => request("/api/health", { auth: false }),
   publicConfig: () => request("/api/public/config", { auth: false }),
+  licenseStatus: () => request("/api/license/status", { auth: false }),
   getInfo: (uid) =>
     request(`/api/getInfo/${encodeURIComponent(uid)}`, { auth: false }),
+
+  // ---- card template (Safety Passport designer) -------------------------
+  getCardConfig: () => request("/api/card-config", { auth: false }),
+  saveCardConfig: (cfg) => request("/api/card-config", { method: "PUT", body: cfg }),
 
   // ---- auth --------------------------------------------------------------
   login: (username, password) =>
@@ -146,10 +151,10 @@ export const api = {
   departments: () => request("/api/employees/meta/departments"),
   stats: () => request("/api/employees/meta/stats"),
 
-  // Plain URLs for <img src>. Both QR endpoints are intentionally
-  // unauthenticated so no Authorization header is needed.
+  // Plain URLs for <img src> / downloads. These endpoints are unauthenticated
+  // so no Authorization header is needed. Backend generates them.
   qrPngUrl: (uid, boxSize = 14) =>
     `${API_BASE_URL}/api/employees/${encodeURIComponent(uid)}/qr.png?box_size=${boxSize}`,
-  qrSvgUrl: (uid) =>
-    `${API_BASE_URL}/api/employees/${encodeURIComponent(uid)}/qr.svg`,
+  badgePdfUrl: (uid) =>
+    `${API_BASE_URL}/api/employees/${encodeURIComponent(uid)}/badge.pdf`,
 };

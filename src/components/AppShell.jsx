@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { APP_SHORT_NAME, ORG_NAME } from "../lib/config";
+import { APP_SHORT_NAME } from "../lib/config";
 import { useAuth } from "../lib/auth";
 import Icon from "./Icon";
+import Logo from "./Logo";
 
 function initials(user) {
   const name = user?.full_name || user?.username || "?";
@@ -14,24 +15,7 @@ function initials(user) {
     .join("");
 }
 
-/** Live HH:MM:SS clock, like the reference dashboard. */
-function Clock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <div className="topbar-clock">
-      <div className="k">Current time</div>
-      <div className="t">
-        {now.toLocaleTimeString("en-GB", { hour12: false })}
-      </div>
-    </div>
-  );
-}
-
-/** Avatar + dropdown (My profile / Sign out). */
+/** Avatar + dropdown. */
 function AvatarMenu({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -132,23 +116,24 @@ export default function AppShell({ children, narrow = false }) {
   return (
     <div className="shell">
       <header className="topbar no-print">
+        {/* Left Side: Schneider Electric Logo */}
         <Link to="/" className="brand">
-          <span className="brand-mark">TV</span>
-          <span style={{ minWidth: 0 }}>
-            <div className="brand-name">{APP_SHORT_NAME}</div>
-            <span className="brand-sub">{ORG_NAME}</span>
-          </span>
+          <Logo height={32} />
         </Link>
+
+        {/* Center: Stylized Brand Title Text (Logo Style) */}
+        <div className="topbar-center-title">
+          <Link to="/" className="brand-logo-title">
+            <span className="brand-word-1">TRAINING</span>
+            <span className="brand-word-2">VALIDATOR</span>
+          </Link>
+        </div>
 
         <div className="spacer" />
 
-        {/* desktop: status + clock + avatar dropdown (authed) or Login (guest) */}
+        {/* Desktop Right Side */}
         {isAuthed ? (
           <div className="desktop-only topbar-right">
-            <div className="topbar-status">
-              <span className="status-dot" /> Online
-            </div>
-            <Clock />
             <AvatarMenu user={user} onLogout={doLogout} />
           </div>
         ) : (
@@ -157,7 +142,7 @@ export default function AppShell({ children, narrow = false }) {
           </Link>
         )}
 
-        {/* mobile: everything lives behind the hamburger */}
+        {/* Mobile menu hamburger */}
         <button
           className="icon-btn menu-btn"
           onClick={() => setOpen(true)}
@@ -198,6 +183,9 @@ export default function AppShell({ children, narrow = false }) {
                   <DrawerLink to="/admin/trainings" icon="training" onClick={close}>
                     Training list
                   </DrawerLink>
+                  <DrawerLink to="/admin/card" icon="badge" onClick={close}>
+                    Card config
+                  </DrawerLink>
                   {isSuperadmin && (
                     <DrawerLink to="/admin/users" icon="user-gear" onClick={close}>
                       Admin users
@@ -219,7 +207,7 @@ export default function AppShell({ children, narrow = false }) {
 
               <div className="spacer" />
               <div className="tiny muted" style={{ paddingTop: 16 }}>
-                {ORG_NAME}
+                Schneider Electric
               </div>
             </div>
           </aside>

@@ -147,10 +147,10 @@ export default function ConsoleUsersPage() {
                 <thead>
                   <tr>
                     <th>Username</th>
-                    <th>Name</th>
+                    <th className="hide-sm">Name</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Last login</th>
+                    <th className="hide-sm">Last login</th>
                     <th />
                   </tr>
                 </thead>
@@ -168,13 +168,13 @@ export default function ConsoleUsersPage() {
                           </span>
                         )}
                       </td>
-                      <td>{u.full_name || "—"}</td>
+                      <td className="hide-sm">{u.full_name || "—"}</td>
                       <td>
                         <select
                           value={u.role}
                           onChange={(e) => changeRole(u, e.target.value)}
                           disabled={u.id === me?.id}
-                          style={{ width: 130 }}
+                          className="role-select"
                         >
                           <option value="superadmin">superadmin</option>
                           <option value="admin">admin</option>
@@ -188,7 +188,7 @@ export default function ConsoleUsersPage() {
                           {u.is_active ? "Active" : "Disabled"}
                         </span>
                       </td>
-                      <td className="small muted">
+                      <td className="small muted hide-sm">
                         {u.last_login_at
                           ? formatDateTime(u.last_login_at)
                           : "never"}
@@ -199,7 +199,8 @@ export default function ConsoleUsersPage() {
                           onClick={() => setPwTarget(u)}
                           title="Reset password"
                         >
-                          <Icon name="key" /> Password
+                          <Icon name="key" />{" "}
+                          <span className="btn-label">Password</span>
                         </button>{" "}
                         <button
                           className="btn sm ghost"
@@ -208,7 +209,9 @@ export default function ConsoleUsersPage() {
                           title={u.is_active ? "Disable account" : "Enable account"}
                         >
                           <Icon name={u.is_active ? "ban" : "check"} />{" "}
-                          {u.is_active ? "Disable" : "Enable"}
+                          <span className="btn-label">
+                            {u.is_active ? "Disable" : "Enable"}
+                          </span>
                         </button>{" "}
                         <button
                           className="btn sm danger"

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Passport</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="card">
+
+    <!-- ==================== LEFT PANEL ==================== -->
+    <aside class="left-panel">
+
+        <div class="panel-content">
+
+            <img class="logo" src="Assets/logo.png" alt="Schneider Electric">
+
+            <span class="rule"></span>
+
+            <h1 class="title">
+                <span class="ink">SAFETY</span>
+                <span class="green">PASSPORT</span>
+            </h1>
+
+            <span class="rule"></span>
+
+            <div class="motto">
+                <svg class="shield" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2.5 4.5 5.4v5.9c0 4.6 3.1 8.4 7.5 10.2 4.4-1.8 7.5-5.6 7.5-10.2V5.4L12 2.5Z"
+                          fill="none" stroke="currentColor" stroke-width="1.7"
+                          stroke-linejoin="round"/>
+                    <path d="M8.6 11.9l2.5 2.5 4.3-4.6" fill="none" stroke="currentColor"
+                          stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="motto-text">
+                    <span>Safety First.</span>
+                    <span>Always.</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- decorative geometry -->
+        <div class="deco" aria-hidden="true">
+            <span class="deco-navy"></span>
+            <span class="deco-dots"></span>
+            <span class="deco-green"></span>
+        </div>
+
+    </aside>
+
+    <!-- ==================== RIGHT PANEL ==================== -->
+    <section class="right-panel">
+
+        <div class="fields">
+
+            <div class="field">
+                <div class="icon"><i class="fa-solid fa-user"></i></div>
+                <div class="label">Name</div>
+                <div class="colon">:</div>
+                <input type="text" autocomplete="off">
+            </div>
+
+            <div class="field">
+                <div class="icon"><i class="fa-solid fa-handshake"></i></div>
+                <div class="label">Contract</div>
+                <div class="colon">:</div>
+                <input type="text" autocomplete="off">
+            </div>
+
+            <div class="field">
+                <div class="icon"><i class="fa-solid fa-id-card"></i></div>
+                <div class="label">Passport No.</div>
+                <div class="colon">:</div>
+                <input type="text" autocomplete="off">
+            </div>
+
+            <div class="field">
+                <div class="icon"><i class="fa-solid fa-calendar-days"></i></div>
+                <div class="label">Valid Up To</div>
+                <div class="colon">:</div>
+                <input type="text" inputmode="numeric" placeholder="DD/MM/YYYY" autocomplete="off">
+            </div>
+
+        </div>
+
+        <div class="bottom">
+
+            <div class="contacts">
+
+                <div class="heading">
+                    <span class="heading-icon"><i class="fa-solid fa-phone"></i></span>
+                    <span class="heading-text">Emergency Contact Numbers</span>
+                    <span class="heading-line"></span>
+                </div>
+
+                <div class="table">
+
+                    <div class="row">
+                        <div class="row-icon"><i class="fa-solid fa-hospital"></i></div>
+                        <div class="row-text">Occupational Health Centre</div>
+                        <div class="row-number">9632134667</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="row-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div class="row-text">Security</div>
+                        <div class="row-number">8050021589</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="row-icon"><i class="fa-solid fa-helmet-safety"></i></div>
+                        <div class="row-text">EHS</div>
+                        <div class="row-number">7558126991</div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="qr-box">
+
+                <div class="qr-frame">
+                    <div class="qr" id="qr"></div>
+                    <span class="bracket tl"></span>
+                    <span class="bracket tr"></span>
+                    <span class="bracket bl"></span>
+                    <span class="bracket br"></span>
+                </div>
+
+                <button class="scan" type="button">
+                    <i class="fa-solid fa-vector-square"></i>
+                    <span>Scan to Verify</span>
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="index.js"></script>
+
+</body>
+</html>

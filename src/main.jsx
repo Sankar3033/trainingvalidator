@@ -5,8 +5,6 @@ import App from "./App";
 import { AuthProvider } from "./lib/auth";
 import "./styles.css";
 
-// Note: StrictMode is intentionally not used — its double-mount in dev makes
-// the camera scanner start twice.
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <AuthProvider>
