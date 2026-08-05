@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import CodeSearch from "../components/CodeSearch";
@@ -9,10 +9,28 @@ import { extractUid } from "../lib/format";
 
 export default function ScanPage() {
   const navigate = useNavigate();
-  // Open straight into the camera: this page exists to scan badges, and
-  // returning here after a lookup should be ready for the next one.
-  const [scanning, setScanning] = useState(true);
+  const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
+
+  // Open straight into the camera ONLY when this browser has already granted
+  // camera permission — then returning here is instantly ready for the next
+  // badge, with no prompt. If permission is still "prompt"/"denied", or the
+  // browser cannot report it (Safari), wait for a deliberate tap so opening
+  // the site never fires a permission dialog on its own.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const status = await navigator.permissions?.query({ name: "camera" });
+        if (alive && status?.state === "granted") setScanning(true);
+      } catch {
+        /* Permissions API missing or camera not queryable — require a tap. */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Both callbacks are memoised: QrScanner restarts the camera whenever these
   // change identity, so passing fresh closures would loop the video feed.
