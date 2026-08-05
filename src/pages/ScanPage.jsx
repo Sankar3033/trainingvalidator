@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import CodeSearch from "../components/CodeSearch";
@@ -9,19 +9,35 @@ import { extractUid } from "../lib/format";
 
 export default function ScanPage() {
   const navigate = useNavigate();
-  const [scanning, setScanning] = useState(false);
+  // Open straight into the camera: this page exists to scan badges, and
+  // returning here after a lookup should be ready for the next one.
+  const [scanning, setScanning] = useState(true);
   const [error, setError] = useState("");
 
-  const handleDetected = (raw) => {
-    const uid = extractUid(raw);
-    if (!uid) {
-      setError("That QR code did not contain a Badge ID.");
+  // Both callbacks are memoised: QrScanner restarts the camera whenever these
+  // change identity, so passing fresh closures would loop the video feed.
+  const handleDetected = useCallback(
+    (raw) => {
+      const uid = extractUid(raw);
+      if (!uid) {
+        setError("That QR code did not contain a Badge ID.");
+        setScanning(false);
+        return;
+      }
       setScanning(false);
-      return;
-    }
+      navigate(`/getInfo/${encodeURIComponent(uid)}`);
+    },
+    [navigate]
+  );
+
+  // Camera blocked or unavailable: drop to manual entry rather than stranding
+  // the user on an error screen they did not ask for.
+  const handleScannerError = useCallback((message) => {
+    setError(message);
     setScanning(false);
-    navigate(`/getInfo/${encodeURIComponent(uid)}`);
-  };
+  }, []);
+
+  const closeScanner = useCallback(() => setScanning(false), []);
 
   return (
     <AppShell narrow>
@@ -31,11 +47,21 @@ export default function ScanPage() {
 
       <div className="panel scan-panel">
         {scanning ? (
-          <QrScanner onDetected={handleDetected} onClose={() => setScanning(false)} />
+          <QrScanner
+            onDetected={handleDetected}
+            onClose={closeScanner}
+            onError={handleScannerError}
+          />
         ) : (
           <>
             <div className="scan-top">
-              <h1 className="scan-title">Scan or enter a Badge ID</h1>
+              <span className="scan-icon">
+                <Icon name="qrcode" />
+              </span>
+              <div className="scan-head-text">
+                <h1 className="scan-title">Scan or enter a Badge ID</h1>
+                <p className="scan-desc">Scan the badge QR, or type the ID below.</p>
+              </div>
               <button
                 className="btn primary scan-cam-btn"
                 onClick={() => {

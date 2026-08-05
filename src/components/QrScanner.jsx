@@ -30,7 +30,7 @@ function friendlyError(err) {
  * Requires a secure context (https or localhost) — Cloudflare Pages serves
  * https, so the camera is available in production.
  */
-export default function QrScanner({ onDetected, onClose }) {
+export default function QrScanner({ onDetected, onClose, onError }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -118,20 +118,27 @@ export default function QrScanner({ onDetected, onClose }) {
       timerRef.current = setTimeout(scan, SCAN_INTERVAL);
     };
 
+    /** Show the failure here AND tell the parent, so a page that opens the
+     *  scanner automatically can fall back to manual entry instead of
+     *  leaving the user stuck on an error screen. */
+    const fail = (message) => {
+      setStatus("error");
+      setError(message);
+      onError?.(message);
+    };
+
     const start = async () => {
       setError("");
       setStatus("starting");
 
       if (!window.isSecureContext) {
-        setStatus("error");
-        setError(
+        fail(
           "The camera needs a secure connection (https). Open this page over https, or type the Badge ID below."
         );
         return;
       }
       if (!navigator.mediaDevices?.getUserMedia) {
-        setStatus("error");
-        setError("This browser does not support camera access. Type the Badge ID below instead.");
+        fail("This browser does not support camera access. Type the Badge ID below instead.");
         return;
       }
 
@@ -177,8 +184,7 @@ export default function QrScanner({ onDetected, onClose }) {
         timerRef.current = setTimeout(scan, 0);
       } catch (err) {
         if (cancelled) return;
-        setStatus("error");
-        setError(friendlyError(err));
+        fail(friendlyError(err));
       }
     };
 
@@ -187,7 +193,7 @@ export default function QrScanner({ onDetected, onClose }) {
       cancelled = true;
       stop();
     };
-  }, [facing, handleText, stop]);
+  }, [facing, handleText, stop, onError]);
 
   const toggleTorch = async () => {
     const track = streamRef.current?.getVideoTracks?.()[0];
