@@ -116,18 +116,12 @@ export default function AppShell({ children, narrow = false }) {
   return (
     <div className="shell">
       <header className="topbar no-print">
-        {/* Left Side: Schneider Electric Logo */}
+        {/* Left: Schneider logo | product name — same on mobile */}
         <Link to="/" className="brand">
-          <Logo height={32} />
+          <Logo height={30} />
+          <span className="brand-divider" aria-hidden="true" />
+          <span className="brand-name">Training Validator</span>
         </Link>
-
-        {/* Center: Stylized Brand Title Text (Logo Style) */}
-        <div className="topbar-center-title">
-          <Link to="/" className="brand-logo-title">
-            <span className="brand-word-1">TRAINING</span>
-            <span className="brand-word-2">VALIDATOR</span>
-          </Link>
-        </div>
 
         <div className="spacer" />
 

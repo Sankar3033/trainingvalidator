@@ -4,11 +4,11 @@ import Icon from "./Icon";
 import { extractUid } from "../lib/format";
 
 /**
- * A code entry + search box. Works with a handheld/USB barcode scanner (which
- * types the badge URL and presses Enter) or with manual typing of a Badge ID /
+ * Badge ID entry. Works with a handheld/USB barcode scanner (which types the
+ * badge URL and presses Enter) or with manual typing of a Badge ID /
  * Employee ID. On submit it opens the verification page for that code.
  */
-export default function CodeSearch({ autoFocus = true, big = false }) {
+export default function CodeSearch({ autoFocus = true }) {
   const navigate = useNavigate();
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
@@ -18,7 +18,7 @@ export default function CodeSearch({ autoFocus = true, big = false }) {
     e.preventDefault();
     const uid = extractUid(value);
     if (!uid) {
-      setError("Enter or scan a Badge ID / Employee ID.");
+      setError("Enter or scan a Badge ID.");
       return;
     }
     setValue("");
@@ -28,7 +28,7 @@ export default function CodeSearch({ autoFocus = true, big = false }) {
 
   return (
     <form onSubmit={submit} className="codesearch">
-      <div className={`codesearch-row ${big ? "big" : ""}`}>
+      <div className="codesearch-field">
         <span className="codesearch-icon">
           <Icon name="barcode" />
         </span>
@@ -40,21 +40,21 @@ export default function CodeSearch({ autoFocus = true, big = false }) {
             setValue(e.target.value);
             if (error) setError("");
           }}
-          placeholder="Scan or type Badge ID (e.g. TV-2026-00001)"
+          placeholder="Badge ID"
           autoFocus={autoFocus}
           autoComplete="off"
           autoCapitalize="characters"
           inputMode="text"
           aria-label="Badge or employee ID"
         />
-        <button className="btn primary" type="submit">
-          <Icon name="search" /> <span className="btn-label">Search</span>
-        </button>
       </div>
+
+      <button className="btn primary codesearch-btn" type="submit">
+        <Icon name="search" /> Search
+      </button>
+
       {error && (
-        <div className="tiny" style={{ color: "var(--danger)", marginTop: 6 }}>
-          {error}
-        </div>
+        <div className="tiny codesearch-err">{error}</div>
       )}
     </form>
   );
