@@ -1986,6 +1986,22 @@ input[type="date"] {
 .emp-form-layout .selrow input { height: 34px; }
 .emp-form-layout .selrow-name b { font-size: 12.5px; }
 
+/* Responsive stacking — MUST come after the .emp-form-layout base rule above,
+   otherwise the base 2-column grid wins the cascade and the layout never
+   collapses (crushing/clipping the trainings panel on tablet & mobile). */
+@media (max-width: 1100px) {
+  .emp-form-layout .train-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 960px) {
+  .emp-form-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .emp-form-layout .selrow { grid-template-columns: 1fr 1fr; }
+  .emp-form-layout .selrow-name { grid-column: 1 / -1; }
+  .emp-form-layout .selrow-del { grid-column: 2; justify-self: end; }
+  .emp-form-layout .selrow-header { display: none; }
+}
+
 /* Scan page: slightly smaller controls on mobile */
 @media (max-width: 560px) {
   .codesearch-field { height: 46px; }

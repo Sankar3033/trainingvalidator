@@ -10,7 +10,13 @@ export default defineConfig({
     port: 5173,
     host: true,
     proxy: {
-      "/api": "http://localhost:8000",
+      // Local dev talks to the hosted backend so real data (training catalog,
+      // employees, QR) flows without running the backend locally.
+      "/api": {
+        target: "https://trainingvalidatorbackend.vercel.app",
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
   preview: { port: 4173, host: true },

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import Icon from "../../components/Icon";
 import { Alert, Confirm, Field, Modal, Spinner } from "../../components/ui";
 import { api } from "../../lib/api";
+import { MAX_ACTIVE_TRAININGS } from "../../lib/config";
 
 const BLANK = {
   code: "",
@@ -22,6 +23,7 @@ export default function TrainingsPage() {
   const [form, setForm] = useState(BLANK);
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [activeCount, setActiveCount] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -32,13 +34,31 @@ export default function TrainingsPage() {
       .finally(() => setLoading(false));
   }, [q]);
 
+  // Active count is tracked separately from `items` (which the search box
+  // filters) so the cap stays accurate while searching.
+  const refreshActiveCount = useCallback(() => {
+    api
+      .listTrainings({ active_only: true })
+      .then((list) => setActiveCount(Array.isArray(list) ? list.length : 0))
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     const t = setTimeout(load, q ? 300 : 0);
     return () => clearTimeout(t);
   }, [load, q]);
 
+  useEffect(() => {
+    refreshActiveCount();
+  }, [refreshActiveCount]);
+
+  const capReached = activeCount >= MAX_ACTIVE_TRAININGS;
+  // Can't switch this training ON: at the cap and it isn't already active.
+  const lockActivate = capReached && !(editing?.id && editing?.is_active);
+
   const openNew = () => {
-    setForm(BLANK);
+    // At the cap a new training can still be created, but only as inactive.
+    setForm({ ...BLANK, is_active: !capReached });
     setEditing({});
   };
   const openEdit = (t) => {
@@ -57,8 +77,20 @@ export default function TrainingsPage() {
 
   const save = async (e) => {
     e.preventDefault();
-    setBusy(true);
     setError("");
+
+    // Cap the number of ACTIVE trainings. Block only operations that would add
+    // a new active row (a new active training, or activating an inactive one).
+    const willBeActive = Boolean(form.is_active);
+    const wasActive = Boolean(editing?.id && editing?.is_active);
+    if (willBeActive && !wasActive && capReached) {
+      setError(
+        `Only ${MAX_ACTIVE_TRAININGS} trainings can be active at once — that's the maximum the Safety Passport card can print. Deactivate one first, or save this as inactive.`
+      );
+      return;
+    }
+
+    setBusy(true);
     try {
       const payload = {
         code: form.code,
@@ -77,6 +109,7 @@ export default function TrainingsPage() {
       }
       setEditing(null);
       load();
+      refreshActiveCount();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -91,6 +124,7 @@ export default function TrainingsPage() {
       setNotice(`Deleted “${confirmDel.name}”`);
       setConfirmDel(null);
       load();
+      refreshActiveCount();
     } catch (err) {
       setError(err.message);
       setConfirmDel(null);
@@ -111,9 +145,16 @@ export default function TrainingsPage() {
       <div className="card">
         <div className="card-head">
           <div>
-            <div className="card-title">Training list</div>
+            <div className="card-title">
+              Training list{" "}
+              <span className={`pill ${capReached ? "expired" : "info"}`}>
+                {activeCount} / {MAX_ACTIVE_TRAININGS} active
+              </span>
+            </div>
             <div className="small muted">
               The configurable catalog you pick from when registering an employee.
+              Up to {MAX_ACTIVE_TRAININGS} trainings can be active — the most the
+              Safety Passport card can print.
             </div>
           </div>
           <div className="row">
@@ -297,14 +338,22 @@ export default function TrainingsPage() {
             <Field label="Description">
               <textarea value={form.description} onChange={set("description")} />
             </Field>
-            <label className="checkbox" style={{ marginBottom: 14 }}>
+            <label className="checkbox" style={{ marginBottom: lockActivate ? 6 : 14 }}>
               <input
                 type="checkbox"
                 checked={Boolean(form.is_active)}
                 onChange={set("is_active")}
+                disabled={lockActivate}
               />
               <span>Active (available for new assignments)</span>
             </label>
+            {lockActivate && (
+              <div className="tiny muted" style={{ marginBottom: 14 }}>
+                Active limit reached (max {MAX_ACTIVE_TRAININGS}) — deactivate
+                another training before activating this one. It can still be
+                saved as inactive.
+              </div>
+            )}
             <div className="row" style={{ justifyContent: "flex-end" }}>
               <button
                 type="button"

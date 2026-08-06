@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Icon from "./Icon";
+import { MAX_ACTIVE_TRAININGS } from "../lib/config";
 
 /* ==========================================================
    SAFETY PASSPORT CARD — exact reference design
@@ -101,43 +102,92 @@ const BACK_ICON = {
   ),
 };
 
-const BACK_KEY_BY_LABEL = {
-  "electrical works": "electrical",
-  "a-frame crane": "crane",
-  "mhe / machine move": "mhe",
-  "height work": "height",
-  "dock operations": "dock",
-  "high voltage (hv)": "hv",
-  "fire fighting": "fire",
-  "first aid": "firstaid",
-};
-
-const BACK_KEY_BY_FA = {
-  bolt: "electrical",
-  industry: "crane",
-  truck: "mhe",
-  stairs: "height",
-  warehouse: "dock",
-  tower: "hv",
-  "fire-extinguisher": "fire",
-  "kit-medical": "firstaid",
-};
-
+/* Training list — column-major so numbers 01-04 run down the left
+   column and 05-08 down the right, matching the reference design. */
 const DEFAULT_BACK_ITEMS = [
   { label: "Electrical Works" },
-  { label: "Dock Operations" },
   { label: "A-Frame Crane" },
-  { label: "High Voltage (HV)" },
   { label: "MHE / Machine Move" },
-  { label: "Fire Fighting" },
   { label: "Height Work" },
+  { label: "Dock Operations" },
+  { label: "High Voltage (HV)" },
+  { label: "Fire Fighting" },
   { label: "First Aid" },
 ];
 
-function backIconKey(item = {}) {
-  const label = (item.label || "").toLowerCase().trim();
-  return BACK_KEY_BY_LABEL[label] || BACK_KEY_BY_FA[item.icon] || "electrical";
-}
+/* Max training rows the back card is designed to hold. Shared with the
+   trainings admin so the catalog can never exceed what the card can print. */
+const MAX_BACK_ITEMS = MAX_ACTIVE_TRAININGS;
+
+/* ----------------------------------------------------------
+   "AUTHORIZED FOR" pictograms (viewBox 0 0 48 48).
+   Rendered dark line-art in the left panel of the back card.
+---------------------------------------------------------- */
+const AUTHZ_ICON = {
+  induction: (
+    <>
+      <rect x="19" y="7" width="24" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="2.4" />
+      <path fill="currentColor" d="M31 11.5l5 1.8v3.3c0 2.7-1.9 4.9-5 5.8-3.1-.9-5-3.1-5-5.8v-3.3l5-1.8Z" />
+      <circle cx="9.5" cy="15" r="4.2" fill="currentColor" />
+      <path fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" d="M3.5 41v-9a6 6 0 0 1 12 0v9" />
+    </>
+  ),
+  height: (
+    <>
+      <g fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5v39M20 5v39" />
+        <path d="M12 12h8M12 20h8M12 28h8M12 36h8" />
+      </g>
+      <circle cx="31" cy="12" r="3.2" fill="currentColor" />
+      <g fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M31 15.5v8" />
+        <path d="M31 18l-7-2M31 18l6 3" />
+        <path d="M31 23.5l-5 6M31 23.5l4 6" />
+      </g>
+    </>
+  ),
+  hotwork: (
+    <>
+      <g fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+        <path d="M15 15a7 7 0 0 1 14 0" />
+        <path d="M12 15h20" />
+      </g>
+      <circle cx="22" cy="20.5" r="4.4" fill="none" stroke="currentColor" strokeWidth="2.2" />
+      <path fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" d="M11 41v-6a11 11 0 0 1 22 0v6" />
+      <path fill="currentColor" d="M37 22c-2.7 2.5-4.3 4.4-4.3 7a4.3 4.3 0 0 0 8.6 0c0-2.8-2-4.6-4.3-7Z" />
+    </>
+  ),
+  firstaid: BACK_ICON.firstaid,
+  material: (
+    <>
+      <path fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" d="M4 21 18 12l14 9" />
+      <path fill="none" stroke="currentColor" strokeWidth="2.4" d="M7 21v18h22V21" />
+      <path fill="currentColor" d="M11 27h7v7h-7zM19 31h7v8h-7z" />
+      <path fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" d="M30 31h6l5 5v3H30z" />
+      <circle cx="34" cy="41" r="2.3" fill="currentColor" />
+      <circle cx="39.5" cy="41" r="2.3" fill="currentColor" />
+    </>
+  ),
+  forklift: BACK_ICON.mhe,
+  crane: BACK_ICON.crane,
+  electrical: (
+    <>
+      <path fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinejoin="round" d="M24 8 43 40H5L24 8Z" />
+      <path fill="currentColor" d="M26 17l-7 11h5l-1.6 7 7.6-11h-5l1.5-7Z" />
+    </>
+  ),
+};
+
+const AUTHZ_ITEMS = [
+  { key: "induction", label: "Safety Induction" },
+  { key: "height", label: "Work at Height" },
+  { key: "hotwork", label: "Hot Work" },
+  { key: "firstaid", label: "First Aid" },
+  { key: "material", label: "Material Handling" },
+  { key: "forklift", label: "Forklift Operation" },
+  { key: "crane", label: "Crane Operation" },
+  { key: "electrical", label: "Electrical Safety" },
+];
 
 /* ----------------------------------------------------------
    Back-card decoration — ONE SVG anchored top-left, drawn in
@@ -158,18 +208,22 @@ function BackDeco() {
       aria-hidden="true"
     >
       <defs>
-        <pattern id={`${id}-dg`} width="8" height="8" patternUnits="userSpaceOnUse">
-          <circle cx="4" cy="4" r="1.2" fill="rgba(47,158,75,.55)" />
-        </pattern>
-        <linearGradient id={`${id}-gb`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#6fce85" />
+        <linearGradient id={`${id}-gb`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#37b357" />
           <stop offset="1" stopColor="#2f9e4b" />
         </linearGradient>
       </defs>
 
-      {/* top-left: dotted corner + green gradient band */}
-      <polygon points="0,0 72,0 0,72" fill={`url(#${id}-dg)`} />
-      <polygon points="46,0 94,0 0,94 0,46" fill={`url(#${id}-gb)`} />
+      {/* bottom: two-layer green wave spanning the card */}
+      <path
+        d="M0,382 C130,364 250,398 400,384 C520,373 620,396 700,380 L700,400 L0,400 Z"
+        fill="#2f9e4b"
+        opacity="0.45"
+      />
+      <path
+        d="M0,390 C160,380 300,400 460,390 C580,383 640,398 700,388 L700,400 L0,400 Z"
+        fill={`url(#${id}-gb)`}
+      />
     </svg>
   );
 }
@@ -564,21 +618,12 @@ const ASSETS_CARD_CSS = `
     gap: 7px;
 }
 
-/* ================= BACK — "TRAININGS PROVIDED" ================= */
+/* ================= BACK — AUTHORIZED FOR / TRAININGS PROVIDED ================= */
 .assets-card-root .card.back {
-    flex-direction: column;
+    flex-direction: row;
     padding: 0;
     position: relative;
     background: #ffffff;
-}
-
-.assets-card-root .tp-sheet {
-    position: relative;
-    z-index: 5;
-    height: 100%;
-    padding: 17px 56px 12px;
-    display: flex;
-    flex-direction: column;
 }
 
 .assets-card-root .back-deco {
@@ -590,87 +635,192 @@ const ASSETS_CARD_CSS = `
     display: block;
 }
 
-.assets-card-root .tp-head { text-align: center; }
-.assets-card-root .tp-title {
-    font-family: 'Barlow Condensed', 'Inter', sans-serif;
-    font-size: 40px;
-    font-weight: 800;
-    line-height: 1;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+/* ---------- LEFT: Authorized-for panel + safety violations ---------- */
+.assets-card-root .authz {
+    width: 258px;
+    flex: 0 0 258px;
+    position: relative;
+    z-index: 5;
+    border-right: 1px solid #e6ebe8;
+    padding: 14px 14px 14px;
+    display: flex;
+    flex-direction: column;
 }
-.assets-card-root .tp-title .ink { color: #152a35; }
-.assets-card-root .tp-title .green { color: #2f9e4b; }
 
-.assets-card-root .tp-rule {
-    margin-top: 7px;
+.assets-card-root .authz-heading {
+    font-family: 'Barlow Condensed', 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #152a35;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    text-align: center;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #e6ebe8;
+}
+
+.assets-card-root .authz-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    row-gap: 12px;
+    column-gap: 4px;
+}
+
+.assets-card-root .authz-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-align: center;
+}
+
+.assets-card-root .authz-tile {
+    width: 40px;
+    height: 40px;
+    border: 1.4px solid #cfe0d4;
+    border-radius: 9px;
+    background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    color: #152a35;
 }
-.assets-card-root .tp-rule .line { display: block; width: 125px; height: 2px; background: #2f9e4b; }
-.assets-card-root .tp-rule .dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: #2f9e4b; }
+.assets-card-root .authz-tile svg { width: 26px; height: 26px; display: block; }
+
+.assets-card-root .authz-label {
+    font-family: 'Barlow Condensed', 'Inter', sans-serif;
+    font-size: 8.2px;
+    font-weight: 700;
+    line-height: 1.05;
+    color: #152a35;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    max-width: 56px;
+}
+
+/* safety violations — single row at the bottom of the left column */
+.assets-card-root .authz-violations {
+    margin-top: auto;
+    margin-bottom: 12px;
+    background: #f4f7f5;
+    border: 1px solid #e6ebe8;
+    border-radius: 10px;
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+.assets-card-root .av-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.assets-card-root .av-icon { width: 19px; height: 19px; flex: 0 0 auto; color: #2f9e4b; display: block; }
+.assets-card-root .av-label {
+    font-family: 'Barlow Condensed', 'Inter', sans-serif;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #152a35;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+.assets-card-root .av-boxes { display: flex; gap: 9px; align-items: center; margin-left: auto; }
+
+/* ---------- RIGHT: Trainings provided ---------- */
+.assets-card-root .tp-sheet {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 5;
+    padding: 10px 16px 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.assets-card-root .tp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+}
+.assets-card-root .tp-title {
+    font-family: 'Barlow Condensed', 'Inter', sans-serif;
+    font-size: 21px;
+    font-weight: 500;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #2f9e4b;
+    white-space: nowrap;
+    text-align: left;
+}
+.assets-card-root .tp-head-logo {
+    width: 90px;
+    max-width: 100%;
+    flex: 0 0 auto;
+    display: block;
+    object-fit: contain;
+}
 
 .assets-card-root .tp-grid {
-    flex: 1;
-    min-height: 0;
     margin-top: 8px;
     display: grid;
     grid-template-columns: 1fr 1px 1fr;
-    column-gap: 26px;
+    column-gap: 12px;
+    align-content: start;
+    row-gap: 0;
 }
 .assets-card-root .tp-col { display: flex; flex-direction: column; }
 .assets-card-root .tp-col-divider { background: #e9ecea; }
 
 .assets-card-root .tp-row {
-    flex: 1;
     position: relative;
     display: grid;
-    grid-template-columns: 42px 1fr 23px;
+    grid-template-columns: 9px 1fr 17px;
     align-items: center;
-    column-gap: 12px;
+    column-gap: 6px;
+    padding: 4.5px 0;
 }
 .assets-card-root .tp-row::after {
     content: "";
     position: absolute;
-    left: 54px;
+    left: 15px;
     right: 0;
     bottom: 0;
     height: 1px;
-    background: #e9ecea;
+    background: #eef1ef;
 }
 .assets-card-root .tp-row:last-child::after { display: none; }
 
-.assets-card-root .tp-tile {
-    width: 42px;
-    height: 42px;
-    border: 1px solid #e0e7e2;
-    border-radius: 10px;
-    background: #f2f8f3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #2f9e4b;
+.assets-card-root .tp-bullet {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2f9e4b;
+    justify-self: center;
 }
-.assets-card-root .tp-tile svg { width: 26px; height: 26px; display: block; }
 
 .assets-card-root .tp-row-label {
     font-family: 'Barlow Condensed', 'Inter', sans-serif;
-    font-size: 16.5px;
-    font-weight: 700;
-    color: #152a35;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #2c3d47;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    line-height: 1.1;
+    letter-spacing: 0.2px;
+    line-height: 1;
 }
 
 .assets-card-root .tp-check {
-    width: 23px;
-    height: 23px;
+    width: 17px;
+    height: 17px;
     flex: 0 0 auto;
-    border: 2px solid #2f9e4b;
-    border-radius: 6px;
+    border: 1.8px solid #2f9e4b;
+    border-radius: 4px;
     background: #ffffff;
     position: relative;
 }
@@ -678,47 +828,13 @@ const ASSETS_CARD_CSS = `
 .assets-card-root .tp-check.on::after {
     content: "";
     position: absolute;
-    left: 5px;
-    top: 4.5px;
-    width: 9px;
-    height: 5px;
-    border-left: 2px solid #fff;
-    border-bottom: 2px solid #fff;
+    left: 4px;
+    top: 3px;
+    width: 6px;
+    height: 3.5px;
+    border-left: 1.8px solid #fff;
+    border-bottom: 1.8px solid #fff;
     transform: rotate(-45deg);
-}
-
-.assets-card-root .tp-foot {
-    margin-top: 5px;
-    padding-top: 9px;
-    border-top: 1px solid #e9ecea;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    column-gap: 20px;
-}
-.assets-card-root .tp-violations {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-left: 42px;
-}
-.assets-card-root .tp-violations-icon { width: 30px; height: 30px; flex: 0 0 auto; color: #2f9e4b; display: block; }
-.assets-card-root .tp-violations-label {
-    font-family: 'Barlow Condensed', 'Inter', sans-serif;
-    font-size: 16.5px;
-    font-weight: 700;
-    color: #152a35;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-}
-.assets-card-root .tp-violations-boxes { display: flex; gap: 12px; margin-left: 14px; }
-.assets-card-root .tp-foot-logo {
-    width: 108px;
-    max-width: 100%;
-    display: block;
-    margin-right: 6px;
-    object-fit: contain;
 }
 `;
 
@@ -943,63 +1059,78 @@ export function AssetsCardBack({
   const [scale, setScale] = useState(0.5);
   useCardScale(containerRef, setScale);
 
-  const items = checklist.length > 0 ? checklist.slice(0, 8) : DEFAULT_BACK_ITEMS;
-  const col1 = items.slice(0, 4);
-  const col2 = items.slice(4, 8);
+  const items = (checklist.length > 0 ? checklist : DEFAULT_BACK_ITEMS).slice(
+    0,
+    MAX_BACK_ITEMS
+  );
+  const half = Math.ceil(items.length / 2);
+  const col1 = items.slice(0, half);
+  const col2 = items.slice(half);
 
   const renderRow = (item, idx) => {
     const done = completedSet ? completedSet.has(item.label) : false;
     return (
       <div className="tp-row" key={idx}>
-        <span className="tp-tile">
-          <svg viewBox="0 0 48 48" aria-hidden="true">{BACK_ICON[backIconKey(item)]}</svg>
-        </span>
+        <span className="tp-bullet" />
         <span className="tp-row-label">{item.label}</span>
         <span className={`tp-check ${done ? "on" : ""}`} />
       </div>
     );
   };
 
+  const violationBoxCount = Number(safetyViolationBoxes) || 3;
+
   return (
     <CardShell containerRef={containerRef} scale={scale}>
       <div className="card back">
         <BackDeco />
 
-        <div className="tp-sheet">
-          {/* Header */}
-          <header className="tp-head">
-            <h1 className="tp-title">
-              <span className="ink">Trainings</span> <span className="green">Provided</span>
-            </h1>
-            <div className="tp-rule">
-              <span className="line" /> <span className="dot" /> <span className="line" />
+        {/* LEFT — Authorized-for panel + safety violations */}
+        <aside className="authz">
+          <div className="authz-heading">Authorized For</div>
+
+          <div className="authz-grid">
+            {AUTHZ_ITEMS.map((it) => (
+              <div className="authz-cell" key={it.key}>
+                <span className="authz-tile">
+                  <svg viewBox="0 0 48 48" aria-hidden="true">{AUTHZ_ICON[it.key]}</svg>
+                </span>
+                <span className="authz-label">{it.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {showSafetyViolations && (
+            <div className="authz-violations">
+              <div className="av-head">
+                <svg className="av-icon" viewBox="0 0 48 48" aria-hidden="true">
+                  {BACK_ICON.violation}
+                </svg>
+                <span className="av-label">Safety Violations</span>
+              </div>
+              <div className="av-boxes">
+                {Array.from({ length: violationBoxCount }).map((_, i) => (
+                  <span className="tp-check" key={i} />
+                ))}
+              </div>
             </div>
+          )}
+        </aside>
+
+        {/* RIGHT — Trainings provided */}
+        <div className="tp-sheet">
+          {/* Header — title left, logo right */}
+          <header className="tp-head">
+            <h1 className="tp-title">Trainings Provided</h1>
+            <img className="tp-head-logo" src="/schneider-logo.png" alt="Schneider Electric" />
           </header>
 
-          {/* Two-column training grid */}
+          {/* Two-column bulleted training list */}
           <div className="tp-grid">
             <div className="tp-col">{col1.map((item, i) => renderRow(item, i))}</div>
             <div className="tp-col-divider" />
-            <div className="tp-col">{col2.map((item, i) => renderRow(item, i + 4))}</div>
+            <div className="tp-col">{col2.map((item, i) => renderRow(item, i + half))}</div>
           </div>
-
-          {/* Footer */}
-          <footer className="tp-foot">
-            {showSafetyViolations && (
-              <div className="tp-violations">
-                <svg className="tp-violations-icon" viewBox="0 0 48 48" aria-hidden="true">
-                  {BACK_ICON.violation}
-                </svg>
-                <span className="tp-violations-label">Safety Violations</span>
-                <div className="tp-violations-boxes">
-                  {Array.from({ length: Number(safetyViolationBoxes) || 3 }).map((_, i) => (
-                    <span className="tp-check" key={i} />
-                  ))}
-                </div>
-              </div>
-            )}
-            <img className="tp-foot-logo" src="/schneider-logo.png" alt="Schneider Electric" />
-          </footer>
         </div>
       </div>
     </CardShell>

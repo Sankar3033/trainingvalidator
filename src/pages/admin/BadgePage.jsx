@@ -13,15 +13,21 @@ export default function BadgePage() {
   const location = useLocation();
   const [emp, setEmp] = useState(null);
   const [cfg, setCfg] = useState(null);
+  const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState(location.state?.notice || "");
 
   useEffect(() => {
-    Promise.all([api.getEmployee(uid), api.getCardConfig()])
-      .then(([empData, cfgData]) => {
+    Promise.all([
+      api.getEmployee(uid),
+      api.getCardConfig(),
+      api.listTrainings({ active_only: true }),
+    ])
+      .then(([empData, cfgData, trainingList]) => {
         setEmp(empData);
         setCfg(cfgData);
+        setCatalog(Array.isArray(trainingList) ? trainingList : []);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -137,7 +143,7 @@ export default function BadgePage() {
             />
 
             <AssetsCardBack
-              checklist={cfg?.back_checklist || []}
+              checklist={catalog.map((t) => ({ label: t.name }))}
               completedSet={completedSet}
               showSafetyViolations={cfg?.show_safety_violations}
               safetyViolationBoxes={cfg?.safety_violation_boxes}
