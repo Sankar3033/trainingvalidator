@@ -33,55 +33,61 @@ export default function BadgePage() {
       .finally(() => setLoading(false));
   }, [uid]);
 
-  const handlePrint = async () => {
-    try {
-      const cards = document.querySelectorAll(".assets-card-root");
-      if (cards.length < 2) return;
-      
-      setNotice("Generating high-quality 2-page PDF...");
+  // Card canvas is 700 x 400 => 1.75 : 1 => 87.5 x 50 mm page.
+  const PAGE_W = 87.5;
+  const PAGE_H = 50;
 
-      // Page matches the card canvas: 700 x 400 px => 1.75 : 1 (87.5 x 50 mm)
-      const PAGE_W = 87.5;
-      const PAGE_H = 50;
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: [PAGE_W, PAGE_H]
+  // Capture both cards at high resolution with SHARP (square) corners so they
+  // fill the rectangular page with no white rounded-corner gaps.
+  const captureCards = async () => {
+    const cards = document.querySelectorAll(".assets-card-root");
+    if (cards.length < 2) return null;
+    const images = [];
+    for (let i = 0; i < 2; i++) {
+      const wrapper = cards[i].parentElement;
+      const cardEl = cards[i].querySelector(".card");
+      const orig = {
+        transform: cards[i].style.transform,
+        height: wrapper.style.height,
+        overflow: wrapper.style.overflow,
+        radius: cardEl ? cardEl.style.borderRadius : "",
+      };
+      cards[i].style.transform = "none";
+      wrapper.style.height = "400px";
+      wrapper.style.overflow = "visible";
+      // Square the corners so the card fills the rectangular page with no
+      // white rounded-corner gaps (the border stays for a crisp edge).
+      if (cardEl) cardEl.style.borderRadius = "0px";
+
+      const canvas = await html2canvas(cards[i], {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        width: 700,
+        height: 400,
       });
-      
-      for (let i = 0; i < 2; i++) {
-        const wrapper = cards[i].parentElement;
-        const originalTransform = cards[i].style.transform;
-        const originalHeight = wrapper.style.height;
-        const originalOverflow = wrapper.style.overflow;
-        
-        cards[i].style.transform = "none";
-        wrapper.style.height = "400px";
-        wrapper.style.overflow = "visible";
 
-        const canvas = await html2canvas(cards[i], {
-          scale: 3,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#ffffff",
-          width: 700,
-          height: 400
-        });
-        
-        cards[i].style.transform = originalTransform;
-        wrapper.style.height = originalHeight;
-        wrapper.style.overflow = originalOverflow;
-        
-        const imgData = canvas.toDataURL("image/jpeg", 1.0);
-        
-        if (i === 1) {
-          pdf.addPage([PAGE_W, PAGE_H], "landscape");
-        }
-        pdf.addImage(imgData, "JPEG", 0, 0, PAGE_W, PAGE_H);
-      }
-      
+      cards[i].style.transform = orig.transform;
+      wrapper.style.height = orig.height;
+      wrapper.style.overflow = orig.overflow;
+      if (cardEl) cardEl.style.borderRadius = orig.radius;
+      images.push(canvas.toDataURL("image/jpeg", 1.0));
+    }
+    return images;
+  };
+
+  const handleDownload = async () => {
+    try {
+      setNotice("Generating 2-page PDF…");
+      const images = await captureCards();
+      if (!images) return;
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [PAGE_W, PAGE_H] });
+      images.forEach((img, i) => {
+        if (i) pdf.addPage([PAGE_W, PAGE_H], "landscape");
+        pdf.addImage(img, "JPEG", 0, 0, PAGE_W, PAGE_H);
+      });
       pdf.save(`Safety_Passport_${emp.employee_id || emp.uid}.pdf`);
-      
       setNotice("PDF downloaded successfully!");
       setTimeout(() => setNotice(""), 3000);
     } catch (err) {
@@ -89,12 +95,38 @@ export default function BadgePage() {
     }
   };
 
+  // Print through the browser's own print dialog (any installed printer).
+  const handleBrowserPrint = async () => {
+    try {
+      setNotice("Preparing print…");
+      const images = await captureCards();
+      if (!images) return;
+      const win = window.open("", "_blank");
+      if (!win) {
+        setError("Please allow pop-ups for this site to use Print.");
+        return;
+      }
+      win.document.write(
+        `<!doctype html><html><head><title>Safety Passport ${
+          emp.employee_id || emp.uid
+        }</title><style>
+          @page { size: ${PAGE_W}mm ${PAGE_H}mm; margin: 0; }
+          html, body { margin: 0; padding: 0; }
+          img { display: block; width: ${PAGE_W}mm; height: ${PAGE_H}mm; page-break-after: always; }
+          img:last-child { page-break-after: auto; }
+        </style></head><body onload="window.focus();window.print();">
+          ${images.map((src) => `<img src="${src}">`).join("")}
+        </body></html>`
+      );
+      win.document.close();
+      setNotice("");
+    } catch (err) {
+      setError("Failed to open the print view. Please try again.");
+    }
+  };
+
   if (loading) return <Spinner label="Loading badge…" />;
   if (error && !emp) return <Alert type="error">{error}</Alert>;
-
-  const completedSet = new Set(
-    (emp.trainings || []).filter((t) => t.status === "valid").map((t) => t.name)
-  );
 
   return (
     <>
@@ -111,8 +143,11 @@ export default function BadgePage() {
           <p className="page-sub">{emp.name} · {emp.employee_id}</p>
         </div>
         <div className="row badge-head-actions">
-          <button className="btn primary sm" onClick={handlePrint}>
+          <button className="btn primary sm" onClick={handleDownload}>
             <Icon name="download" /> Download PDF
+          </button>
+          <button className="btn sm" onClick={handleBrowserPrint}>
+            <Icon name="print" /> Print
           </button>
           <Link className="btn sm" to={`/getInfo/${emp.uid}`} target="_blank">
             <Icon name="external-link" /> Preview Badge
@@ -143,8 +178,11 @@ export default function BadgePage() {
             />
 
             <AssetsCardBack
-              checklist={catalog.map((t) => ({ label: t.name }))}
-              completedSet={completedSet}
+              checklist={catalog.map((t) => ({
+                label: t.name,
+                code: t.code,
+                image: t.image,
+              }))}
               showSafetyViolations={cfg?.show_safety_violations}
               safetyViolationBoxes={cfg?.safety_violation_boxes}
             />

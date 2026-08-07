@@ -18,4 +18,4 @@ export const USER_KEY = "tv.user";
 // Max number of ACTIVE trainings. Only active trainings print on the Safety
 // Passport back card, and the layout is designed to hold this many. Enforced
 // in the UI (trainings admin) and used to cap what the card renders.
-export const MAX_ACTIVE_TRAININGS = 22;
+export const MAX_ACTIVE_TRAININGS = 16;

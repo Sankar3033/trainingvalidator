@@ -119,6 +119,20 @@ const DEFAULT_BACK_ITEMS = [
    trainings admin so the catalog can never exceed what the card can print. */
 const MAX_BACK_ITEMS = MAX_ACTIVE_TRAININGS;
 
+/* Fallback line-art (by training code) shown in the left tiles until a real
+   image is uploaded for that training. */
+const CODE_ICON = {
+  ELEC: "electrical",
+  CRANE: "crane",
+  MHE: "mhe",
+  HEIGHT: "height",
+  DOCK: "dock",
+  HV: "hv",
+  FIRE: "fire",
+  FIRSTAID: "firstaid",
+};
+const codeIconKey = (code) => CODE_ICON[(code || "").toUpperCase()] || "electrical";
+
 /* ----------------------------------------------------------
    "AUTHORIZED FOR" pictograms (viewBox 0 0 48 48).
    Rendered dark line-art in the left panel of the back card.
@@ -642,36 +656,43 @@ const ASSETS_CARD_CSS = `
     position: relative;
     z-index: 5;
     border-right: 1px solid #e6ebe8;
-    padding: 14px 14px 14px;
+    padding: 10px 14px 14px;
     display: flex;
     flex-direction: column;
 }
 
+/* Matches .tp-title so "Authorized For" and "Trainings Provided" read as one
+   pair of headings on the same horizontal line. */
 .assets-card-root .authz-heading {
     font-family: 'Barlow Condensed', 'Inter', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 21px;
+    font-weight: 500;
+    line-height: 1;
     color: #152a35;
     text-transform: uppercase;
-    letter-spacing: 1.4px;
+    letter-spacing: 0.6px;
     text-align: center;
-    padding-bottom: 8px;
-    margin-bottom: 14px;
-    border-bottom: 1px solid #e6ebe8;
+    margin-bottom: 12px;
 }
 
 .assets-card-root .authz-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    row-gap: 12px;
-    column-gap: 4px;
+    row-gap: 8px;
+    column-gap: 6px;
+    justify-items: center;
+    /* nudge the tiles down so the first tile lines up with the first
+       training row's text on the right */
+    margin-top: 12px;
 }
 
 .assets-card-root .authz-cell {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
     text-align: center;
 }
 
@@ -685,8 +706,18 @@ const ASSETS_CARD_CSS = `
     align-items: center;
     justify-content: center;
     color: #152a35;
+    padding: 4px;
+    overflow: hidden;
+    flex: 0 0 auto;
 }
 .assets-card-root .authz-tile svg { width: 26px; height: 26px; display: block; }
+.assets-card-root .authz-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    border-radius: 5px;
+}
 
 .assets-card-root .authz-label {
     font-family: 'Barlow Condensed', 'Inter', sans-serif;
@@ -696,7 +727,9 @@ const ASSETS_CARD_CSS = `
     color: #152a35;
     text-transform: uppercase;
     letter-spacing: 0.2px;
-    max-width: 56px;
+    width: 100%;
+    max-height: 18px; /* ~2 lines; keeps grid rows even for long names */
+    overflow: hidden;
 }
 
 /* safety violations — single row at the bottom of the left column */
@@ -743,7 +776,7 @@ const ASSETS_CARD_CSS = `
 
 .assets-card-root .tp-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
     flex: 0 0 auto;
@@ -755,7 +788,7 @@ const ASSETS_CARD_CSS = `
     line-height: 1;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    color: #2f9e4b;
+    color: #152a35; /* front-card navy (matches "SAFETY" / field labels) */
     white-space: nowrap;
     text-align: left;
 }
@@ -781,10 +814,10 @@ const ASSETS_CARD_CSS = `
 .assets-card-root .tp-row {
     position: relative;
     display: grid;
-    grid-template-columns: 9px 1fr 17px;
+    grid-template-columns: 10px 1fr 18px;
     align-items: center;
-    column-gap: 6px;
-    padding: 4.5px 0;
+    column-gap: 8px;
+    padding: 9px 0;
 }
 .assets-card-root .tp-row::after {
     content: "";
@@ -807,14 +840,15 @@ const ASSETS_CARD_CSS = `
 
 .assets-card-root .tp-row-label {
     font-family: 'Barlow Condensed', 'Inter', sans-serif;
-    font-size: 12.5px;
+    font-size: 18px;
     font-weight: 500;
     color: #2c3d47;
     text-transform: uppercase;
-    letter-spacing: 0.2px;
-    line-height: 1;
+    letter-spacing: 0.3px;
+    line-height: 1.05;
 }
 
+/* Always printed empty — ticked by hand on the physical badge. */
 .assets-card-root .tp-check {
     width: 17px;
     height: 17px;
@@ -823,18 +857,6 @@ const ASSETS_CARD_CSS = `
     border-radius: 4px;
     background: #ffffff;
     position: relative;
-}
-.assets-card-root .tp-check.on { background: #2f9e4b; }
-.assets-card-root .tp-check.on::after {
-    content: "";
-    position: absolute;
-    left: 4px;
-    top: 3px;
-    width: 6px;
-    height: 3.5px;
-    border-left: 1.8px solid #fff;
-    border-bottom: 1.8px solid #fff;
-    transform: rotate(-45deg);
 }
 `;
 
@@ -1051,7 +1073,6 @@ export function AssetsCardFront({ data = {}, emergencyTitle, emergencyContacts =
 ========================================================== */
 export function AssetsCardBack({
   checklist = [],
-  completedSet = null,
   showSafetyViolations = true,
   safetyViolationBoxes = 3,
 }) {
@@ -1067,16 +1088,15 @@ export function AssetsCardBack({
   const col1 = items.slice(0, half);
   const col2 = items.slice(half);
 
-  const renderRow = (item, idx) => {
-    const done = completedSet ? completedSet.has(item.label) : false;
-    return (
-      <div className="tp-row" key={idx}>
-        <span className="tp-bullet" />
-        <span className="tp-row-label">{item.label}</span>
-        <span className={`tp-check ${done ? "on" : ""}`} />
-      </div>
-    );
-  };
+  // Checkboxes are always printed empty — they're ticked by hand on the
+  // physical badge, not marked in software.
+  const renderRow = (item, idx) => (
+    <div className="tp-row" key={idx}>
+      <span className="tp-bullet" />
+      <span className="tp-row-label">{item.label}</span>
+      <span className="tp-check" />
+    </div>
+  );
 
   const violationBoxCount = Number(safetyViolationBoxes) || 3;
 
@@ -1090,12 +1110,18 @@ export function AssetsCardBack({
           <div className="authz-heading">Authorized For</div>
 
           <div className="authz-grid">
-            {AUTHZ_ITEMS.map((it) => (
-              <div className="authz-cell" key={it.key}>
+            {items.map((t, i) => (
+              <div className="authz-cell" key={i}>
                 <span className="authz-tile">
-                  <svg viewBox="0 0 48 48" aria-hidden="true">{AUTHZ_ICON[it.key]}</svg>
+                  {t.image ? (
+                    <img className="authz-img" src={t.image} alt="" />
+                  ) : (
+                    <svg viewBox="0 0 48 48" aria-hidden="true">
+                      {BACK_ICON[codeIconKey(t.code)]}
+                    </svg>
+                  )}
                 </span>
-                <span className="authz-label">{it.label}</span>
+                <span className="authz-label">{t.label}</span>
               </div>
             ))}
           </div>

@@ -24,6 +24,7 @@ export default function TrainingsPage() {
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState(null);
   const [activeCount, setActiveCount] = useState(0);
+  const [uploading, setUploading] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -114,6 +115,38 @@ export default function TrainingsPage() {
       setError(err.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onPickImage = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file || !editing?.id) return;
+    setUploading(true);
+    setError("");
+    try {
+      const updated = await api.uploadTrainingImage(editing.id, file);
+      setForm((f) => ({ ...f, image: updated.image }));
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = async () => {
+    if (!editing?.id) return;
+    setUploading(true);
+    setError("");
+    try {
+      const updated = await api.clearTrainingImage(editing.id);
+      setForm((f) => ({ ...f, image: updated.image || null }));
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -338,6 +371,66 @@ export default function TrainingsPage() {
             <Field label="Description">
               <textarea value={form.description} onChange={set("description")} />
             </Field>
+
+            {editing?.id ? (
+              <Field
+                label="Training image"
+                hint="JPG, JPEG, PNG or SVG — auto-resized to 400×400. Shown on the badge."
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div
+                    style={{
+                      width: 64,
+                      height: 64,
+                      flex: "0 0 auto",
+                      border: "1px solid var(--line)",
+                      borderRadius: 8,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
+                      background: "var(--surface-2)",
+                    }}
+                  >
+                    {form.image ? (
+                      <img
+                        src={form.image}
+                        alt=""
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      />
+                    ) : (
+                      <span className="tiny muted">None</span>
+                    )}
+                  </div>
+                  <div className="row" style={{ gap: 8 }}>
+                    <label className="btn sm ghost" style={{ cursor: "pointer" }}>
+                      <Icon name="image" /> {uploading ? "Uploading…" : "Upload"}
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.svg,image/png,image/jpeg,image/svg+xml"
+                        onChange={onPickImage}
+                        disabled={uploading}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                    {form.image && (
+                      <button
+                        type="button"
+                        className="btn sm danger"
+                        onClick={removeImage}
+                        disabled={uploading}
+                      >
+                        <Icon name="trash" /> Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Field>
+            ) : (
+              <div className="tiny muted" style={{ marginBottom: 12 }}>
+                Save the training first, then reopen it to add an image.
+              </div>
+            )}
             <label className="checkbox" style={{ marginBottom: lockActivate ? 6 : 14 }}>
               <input
                 type="checkbox"

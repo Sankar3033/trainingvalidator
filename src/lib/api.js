@@ -78,6 +78,38 @@ export async function request(
   return payload;
 }
 
+/** Multipart form upload (files). Mirrors request() but lets the browser set
+ *  the multipart Content-Type/boundary itself. */
+export async function requestForm(path, formData, { method = "POST" } = {}) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, { method, headers, body: formData });
+  } catch (err) {
+    if (err?.name === "AbortError") throw err;
+    throw new ApiError(
+      "Cannot reach the server. Check your internet connection and try again.",
+      0,
+      null
+    );
+  }
+
+  const isJson = (res.headers.get("content-type") || "").includes("application/json");
+  const payload = isJson ? await res.json().catch(() => null) : await res.text();
+  if (!res.ok) {
+    if (res.status === 401) signalSessionExpired();
+    const message =
+      readableDetail(payload?.detail) ||
+      (typeof payload === "string" && payload) ||
+      `Upload failed (${res.status})`;
+    throw new ApiError(message, res.status, payload);
+  }
+  return payload;
+}
+
 const qs = (params = {}) => {
   const sp = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -134,6 +166,13 @@ export const api = {
     request(`/api/trainings/${id}`, { method: "PATCH", body: data }),
   deleteTraining: (id) => request(`/api/trainings/${id}`, { method: "DELETE" }),
   trainingCategories: () => request("/api/trainings/meta/categories"),
+  uploadTrainingImage: (id, file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return requestForm(`/api/trainings/${id}/image`, form);
+  },
+  clearTrainingImage: (id) =>
+    request(`/api/trainings/${id}/image`, { method: "DELETE" }),
 
   // ---- employees ---------------------------------------------------------
   listEmployees: (params) => request(`/api/employees${qs(params)}`),
