@@ -4,6 +4,9 @@ import Icon from "../../components/Icon";
 import { Alert, Field, Spinner } from "../../components/ui";
 import { api } from "../../lib/api";
 
+// Max emergency-contact rows the card is designed to hold. UI-enforced only.
+const MAX_CONTACTS = 4;
+
 export default function CardDesignerPage() {
   const [cfg, setCfg] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,10 +54,17 @@ export default function CardDesignerPage() {
     });
 
   const addContact = () =>
-    setCfg((c) => ({
-      ...c,
-      emergency_contacts: [...c.emergency_contacts, { label: "New contact", value: "" }],
-    }));
+    setCfg((c) =>
+      c.emergency_contacts.length >= MAX_CONTACTS
+        ? c
+        : {
+            ...c,
+            emergency_contacts: [
+              ...c.emergency_contacts,
+              { label: "New contact", value: "" },
+            ],
+          }
+    );
 
   const removeContact = (i) =>
     setCfg((c) => ({
@@ -160,9 +170,18 @@ export default function CardDesignerPage() {
                   </div>
                 ))}
               </div>
-              <button className="btn sm ghost add-contact" onClick={addContact}>
+              <button
+                className="btn sm ghost add-contact"
+                onClick={addContact}
+                disabled={cfg.emergency_contacts.length >= MAX_CONTACTS}
+              >
                 <Icon name="plus" /> Add contact
               </button>
+              {cfg.emergency_contacts.length >= MAX_CONTACTS && (
+                <div className="tiny muted" style={{ marginTop: 6 }}>
+                  Maximum {MAX_CONTACTS} contacts — remove one to add another.
+                </div>
+              )}
             </div>
 
             {/* SECTION 2: Backside Checklist Config (Hidden for now as requested) */}
