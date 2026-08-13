@@ -805,6 +805,7 @@ export default function BulkEditPage() {
       {/* ---------------- per-row training editor ---------------- */}
       {editing && (
         <Modal
+          size="wide"
           title={`Trainings — ${editing.name || "(unnamed)"}`}
           onClose={() => setTrainingFor(null)}
           footer={
@@ -820,7 +821,16 @@ export default function BulkEditPage() {
             Still local — press <b>Save all</b> when you have finished editing
             everyone.
           </div>
-          <div className="picker" style={{ maxHeight: 420 }}>
+          {/* The header lives INSIDE the scroll container: keeping it outside
+              left it misaligned by the scrollbar width. */}
+          <div className="picker" style={{ maxHeight: "56vh" }}>
+            <div className="bulk-tr-row head">
+              <span />
+              <span>Training</span>
+              <span>Completed on</span>
+              <span>Valid till</span>
+              <span>Status</span>
+            </div>
             {activeCatalog.map((t) => {
               const row = editing.trainings.find((r) => r.training_id === t.id);
               return (
