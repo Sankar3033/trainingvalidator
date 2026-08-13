@@ -9,6 +9,7 @@ import {
   faBan,
   faBarcode,
   faBars,
+  faBell,
   faBolt,
   faCalendarDays,
   faCamera,
@@ -40,6 +41,7 @@ import {
   faKey,
   faLink,
   faMagnifyingGlass,
+  faPaperPlane,
   faPenToSquare,
   faPlus,
   faPowerOff,
@@ -110,6 +112,9 @@ const ICONS = {
   "user-gear": faUserGear,
   badge: faIdCard,
   warning: faTriangleExclamation,
+  "triangle-exclamation": faTriangleExclamation,
+  bell: faBell,
+  "paper-plane": faPaperPlane,
   xmark: faXmark,
 };
 

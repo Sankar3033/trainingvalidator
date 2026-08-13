@@ -174,11 +174,14 @@ export default function AppShell({ children, narrow = false }) {
                   <DrawerLink to="/admin/employees" icon="users" onClick={close}>
                     Employees &amp; badges
                   </DrawerLink>
+                  <DrawerLink to="/admin/bulk" icon="users" onClick={close}>
+                    Bulk edit
+                  </DrawerLink>
                   <DrawerLink to="/admin/trainings" icon="training" onClick={close}>
                     Training list
                   </DrawerLink>
                   <DrawerLink to="/admin/card" icon="badge" onClick={close}>
-                    Card config
+                    Configuration
                   </DrawerLink>
                   {isSuperadmin && (
                     <DrawerLink to="/admin/users" icon="user-gear" onClick={close}>

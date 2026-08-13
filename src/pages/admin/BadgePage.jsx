@@ -5,8 +5,14 @@ import Icon from "../../components/Icon";
 import { Alert, Spinner, StatusPill } from "../../components/ui";
 import { api } from "../../lib/api";
 import { formatDate } from "../../lib/format";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+import { cached, KEYS } from "../../lib/prefetch";
+import {
+  PAGE_H,
+  PAGE_W,
+  badgeFileName,
+  buildBadgePdf,
+  captureCards as captureCards_,
+} from "../../lib/badgeExport";
 
 export default function BadgePage() {
   const { uid } = useParams();
@@ -14,80 +20,68 @@ export default function BadgePage() {
   const [emp, setEmp] = useState(null);
   const [cfg, setCfg] = useState(null);
   const [catalog, setCatalog] = useState([]);
+  const [images, setImages] = useState(null); // null = still loading
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState(location.state?.notice || "");
 
+  // Stage 1 — everything except the images, so the card paints immediately.
+  // The card config and the active catalog are usually already warmed.
   useEffect(() => {
+    let alive = true;
     Promise.all([
       api.getEmployee(uid),
-      api.getCardConfig(),
-      api.listTrainings({ active_only: true }),
+      cached(KEYS.cardConfig, () => api.getCardConfig()),
+      cached(`${KEYS.trainings}:active`, () =>
+        api.listTrainings({ active_only: true })
+      ),
     ])
       .then(([empData, cfgData, trainingList]) => {
+        if (!alive) return;
         setEmp(empData);
         setCfg(cfgData);
         setCatalog(Array.isArray(trainingList) ? trainingList : []);
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch((e) => alive && setError(e.message))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
   }, [uid]);
 
-  // Card canvas is 700 x 400 => 1.75 : 1 => 87.5 x 50 mm page.
-  const PAGE_W = 87.5;
-  const PAGE_H = 50;
+  // Stage 2 — the images. This is the ONLY screen that prints them, so this is
+  // the only place they are fetched in bulk. Until they arrive the card shows
+  // its built-in icons, and PDF/print are held back so an export can never
+  // capture a half-loaded card.
+  useEffect(() => {
+    let alive = true;
+    cached(KEYS.trainingImages, () => api.trainingImages({ active_only: true }))
+      .then((rows) => {
+        if (!alive) return;
+        const byId = {};
+        (Array.isArray(rows) ? rows : []).forEach((r) => {
+          byId[r.id] = r.image;
+        });
+        setImages(byId);
+      })
+      .catch(() => alive && setImages({}));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  // Capture both cards at high resolution with SHARP (square) corners so they
-  // fill the rectangular page with no white rounded-corner gaps.
-  const captureCards = async () => {
-    const cards = document.querySelectorAll(".assets-card-root");
-    if (cards.length < 2) return null;
-    const images = [];
-    for (let i = 0; i < 2; i++) {
-      const wrapper = cards[i].parentElement;
-      const cardEl = cards[i].querySelector(".card");
-      const orig = {
-        transform: cards[i].style.transform,
-        height: wrapper.style.height,
-        overflow: wrapper.style.overflow,
-        radius: cardEl ? cardEl.style.borderRadius : "",
-      };
-      cards[i].style.transform = "none";
-      wrapper.style.height = "400px";
-      wrapper.style.overflow = "visible";
-      // Square the corners so the card fills the rectangular page with no
-      // white rounded-corner gaps (the border stays for a crisp edge).
-      if (cardEl) cardEl.style.borderRadius = "0px";
+  const imagesReady = images !== null;
 
-      const canvas = await html2canvas(cards[i], {
-        scale: 3,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        width: 700,
-        height: 400,
-      });
-
-      cards[i].style.transform = orig.transform;
-      wrapper.style.height = orig.height;
-      wrapper.style.overflow = orig.overflow;
-      if (cardEl) cardEl.style.borderRadius = orig.radius;
-      images.push(canvas.toDataURL("image/jpeg", 1.0));
-    }
-    return images;
-  };
+  // Capture is shared with the bulk editor (lib/badgeExport.js) so a badge
+  // printed one-at-a-time and one printed in a zip are identical.
+  const captureCards = () => captureCards_(document);
 
   const handleDownload = async () => {
     try {
       setNotice("Generating 2-page PDF…");
       const images = await captureCards();
       if (!images) return;
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [PAGE_W, PAGE_H] });
-      images.forEach((img, i) => {
-        if (i) pdf.addPage([PAGE_W, PAGE_H], "landscape");
-        pdf.addImage(img, "JPEG", 0, 0, PAGE_W, PAGE_H);
-      });
-      pdf.save(`Safety_Passport_${emp.employee_id || emp.uid}.pdf`);
+      buildBadgePdf(images).save(badgeFileName(emp));
       setNotice("PDF downloaded successfully!");
       setTimeout(() => setNotice(""), 3000);
     } catch (err) {
@@ -143,10 +137,20 @@ export default function BadgePage() {
           <p className="page-sub">{emp.name} · {emp.employee_id}</p>
         </div>
         <div className="row badge-head-actions">
-          <button className="btn primary sm" onClick={handleDownload}>
+          <button
+            className="btn primary sm"
+            onClick={handleDownload}
+            disabled={!imagesReady}
+            title={imagesReady ? "" : "Loading training images…"}
+          >
             <Icon name="download" /> Download PDF
           </button>
-          <button className="btn sm" onClick={handleBrowserPrint}>
+          <button
+            className="btn sm"
+            onClick={handleBrowserPrint}
+            disabled={!imagesReady}
+            title={imagesReady ? "" : "Loading training images…"}
+          >
             <Icon name="print" /> Print
           </button>
           <Link className="btn sm" to={`/getInfo/${emp.uid}`} target="_blank">
@@ -181,7 +185,7 @@ export default function BadgePage() {
               checklist={catalog.map((t) => ({
                 label: t.name,
                 code: t.code,
-                image: t.image,
+                image: images?.[t.id] || null,
               }))}
               showSafetyViolations={cfg?.show_safety_violations}
               safetyViolationBoxes={cfg?.safety_violation_boxes}

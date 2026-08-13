@@ -131,6 +131,16 @@ export const api = {
   getCardConfig: () => request("/api/card-config", { auth: false }),
   saveCardConfig: (cfg) => request("/api/card-config", { method: "PUT", body: cfg }),
 
+  // ---- expiry notifications ---------------------------------------------
+  getNotificationSettings: () => request("/api/notifications/settings"),
+  saveNotificationSettings: (data) =>
+    request("/api/notifications/settings", { method: "PUT", body: data }),
+  sendTestEmail: (email) =>
+    request("/api/notifications/test", { method: "POST", body: { email } }),
+  expiryReport: (params) => request(`/api/notifications/expiry-report${qs(params)}`),
+  runExpiryScan: (params) =>
+    request(`/api/notifications/expiry-scan${qs(params)}`, { method: "POST" }),
+
   // ---- auth --------------------------------------------------------------
   login: (username, password) =>
     request("/api/auth/login", {
@@ -160,12 +170,20 @@ export const api = {
     request(`/api/console-users/${id}`, { method: "DELETE" }),
 
   // ---- training catalog --------------------------------------------------
+  // The list never carries images — rows report `has_image` instead. Use
+  // getTraining() for one image (edit form) or trainingImages() for the set
+  // the badge prints.
   listTrainings: (params) => request(`/api/trainings${qs(params)}`),
+  getTraining: (id) => request(`/api/trainings/${id}`),
+  trainingImages: (params) => request(`/api/trainings/images${qs(params)}`),
+  trainingCounts: () => request("/api/trainings/meta/count"),
   createTraining: (data) => request("/api/trainings", { method: "POST", body: data }),
   updateTraining: (id, data) =>
     request(`/api/trainings/${id}`, { method: "PATCH", body: data }),
   deleteTraining: (id) => request(`/api/trainings/${id}`, { method: "DELETE" }),
   trainingCategories: () => request("/api/trainings/meta/categories"),
+  // Everyone who has completed a training (from the employee<->training map).
+  trainingEmployees: (id) => request(`/api/trainings/${id}/employees`),
   uploadTrainingImage: (id, file) => {
     const form = new FormData();
     form.append("file", file);
@@ -189,6 +207,16 @@ export const api = {
     request(`/api/employees/${encodeURIComponent(key)}`, { method: "DELETE" }),
   departments: () => request("/api/employees/meta/departments"),
   stats: () => request("/api/employees/meta/stats"),
+
+  // ---- bulk editor -------------------------------------------------------
+  // Whole roster as minimal rows (left-hand pick list).
+  employeesPicker: () => request("/api/employees/meta/picker"),
+  // Full records for a selection, one request.
+  bulkFetchEmployees: (uids) =>
+    request("/api/employees/bulk/fetch", { method: "POST", body: { uids } }),
+  // The single write that commits every pending create/update.
+  bulkSaveEmployees: (employees) =>
+    request("/api/employees/bulk/save", { method: "POST", body: { employees } }),
 
   // Plain URLs for <img src> / downloads. These endpoints are unauthenticated
   // so no Authorization header is needed. Backend generates them.

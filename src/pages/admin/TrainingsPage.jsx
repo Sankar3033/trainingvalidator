@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Icon from "../../components/Icon";
-import { Alert, Confirm, Field, Modal, Spinner } from "../../components/ui";
+import {
+  Alert,
+  Confirm,
+  Field,
+  Modal,
+  Spinner,
+  StatusPill,
+} from "../../components/ui";
 import { api } from "../../lib/api";
 import { MAX_ACTIVE_TRAININGS } from "../../lib/config";
+import { formatDate } from "../../lib/format";
+import { cached, invalidate, KEYS } from "../../lib/prefetch";
 
 const BLANK = {
   code: "",
@@ -25,24 +35,38 @@ export default function TrainingsPage() {
   const [confirmDel, setConfirmDel] = useState(null);
   const [activeCount, setActiveCount] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [members, setMembers] = useState(null); // { training, rows|null, error }
 
+  // The unfiltered catalog is shared with the employee form and is warmed in
+  // the background, so arriving here usually costs no request. A search is
+  // always live.
   const load = useCallback(() => {
     setLoading(true);
-    api
-      .listTrainings({ q })
+    const fetch = q
+      ? api.listTrainings({ q })
+      : cached(KEYS.trainings, () => api.listTrainings());
+    fetch
       .then(setItems)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [q]);
 
   // Active count is tracked separately from `items` (which the search box
-  // filters) so the cap stays accurate while searching.
+  // filters) so the cap stays accurate while searching. This used to download
+  // the whole catalog a second time just to call .length on it.
   const refreshActiveCount = useCallback(() => {
-    api
-      .listTrainings({ active_only: true })
-      .then((list) => setActiveCount(Array.isArray(list) ? list.length : 0))
+    cached(KEYS.trainingCounts, () => api.trainingCounts())
+      .then((c) => setActiveCount(Number(c?.active) || 0))
       .catch(() => {});
   }, []);
+
+  // Every write invalidates the shared catalog copies.
+  const refresh = useCallback(() => {
+    invalidate("trainings");
+    load();
+    refreshActiveCount();
+  }, [load, refreshActiveCount]);
 
   useEffect(() => {
     const t = setTimeout(load, q ? 300 : 0);
@@ -62,9 +86,21 @@ export default function TrainingsPage() {
     setForm({ ...BLANK, is_active: !capReached });
     setEditing({});
   };
+  // The list carries no images, only a `has_image` flag. Show the form right
+  // away and pull this one training's image in behind it — the only place a
+  // stored image is ever fetched outside the badge page.
   const openEdit = (t) => {
-    setForm({ ...t });
+    setForm({ ...t, image: null });
     setEditing(t);
+    if (!t.has_image) return;
+    setImageLoading(true);
+    api
+      .getTraining(t.id)
+      .then((full) =>
+        setForm((f) => (f.id === full.id ? { ...f, image: full.image } : f))
+      )
+      .catch(() => {})
+      .finally(() => setImageLoading(false));
   };
   const set = (k) => (e) => {
     const v =
@@ -109,8 +145,7 @@ export default function TrainingsPage() {
         setNotice(`Added “${payload.name}”`);
       }
       setEditing(null);
-      load();
-      refreshActiveCount();
+      refresh();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -127,7 +162,7 @@ export default function TrainingsPage() {
     try {
       const updated = await api.uploadTrainingImage(editing.id, file);
       setForm((f) => ({ ...f, image: updated.image }));
-      load();
+      refresh();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -142,12 +177,29 @@ export default function TrainingsPage() {
     try {
       const updated = await api.clearTrainingImage(editing.id);
       setForm((f) => ({ ...f, image: updated.image || null }));
-      load();
+      refresh();
     } catch (err) {
       setError(err.message);
     } finally {
       setUploading(false);
     }
+  };
+
+  // Who has completed this training? Served from the employee<->training map.
+  const showUsers = (t) => {
+    setMembers({ training: t, rows: null, error: "" });
+    api
+      .trainingEmployees(t.id)
+      .then((rows) =>
+        setMembers((m) =>
+          m && m.training.id === t.id ? { ...m, rows: rows || [] } : m
+        )
+      )
+      .catch((e) =>
+        setMembers((m) =>
+          m && m.training.id === t.id ? { ...m, rows: [], error: e.message } : m
+        )
+      );
   };
 
   const doDelete = async () => {
@@ -156,8 +208,7 @@ export default function TrainingsPage() {
       await api.deleteTraining(confirmDel.id);
       setNotice(`Deleted “${confirmDel.name}”`);
       setConfirmDel(null);
-      load();
-      refreshActiveCount();
+      refresh();
     } catch (err) {
       setError(err.message);
       setConfirmDel(null);
@@ -252,6 +303,14 @@ export default function TrainingsPage() {
                       <td className="actions">
                         <button
                           className="btn sm ghost"
+                          onClick={() => showUsers(t)}
+                          title="Show employees who completed this training"
+                        >
+                          <Icon name="users" />{" "}
+                          <span className="btn-label">Show users</span>
+                        </button>{" "}
+                        <button
+                          className="btn sm ghost"
                           onClick={() => openEdit(t)}
                           title="Edit training"
                         >
@@ -300,6 +359,9 @@ export default function TrainingsPage() {
                     </div>
                   </div>
                   <div className="mcard-actions">
+                    <button className="btn sm ghost" onClick={() => showUsers(t)}>
+                      <Icon name="users" /> Show users
+                    </button>
                     <button className="btn sm ghost" onClick={() => openEdit(t)}>
                       <Icon name="edit" /> Edit
                     </button>
@@ -399,7 +461,9 @@ export default function TrainingsPage() {
                         style={{ width: "100%", height: "100%", objectFit: "contain" }}
                       />
                     ) : (
-                      <span className="tiny muted">None</span>
+                      <span className="tiny muted">
+                        {imageLoading ? "Loading…" : "None"}
+                      </span>
                     )}
                   </div>
                   <div className="row" style={{ gap: 8 }}>
@@ -460,6 +524,157 @@ export default function TrainingsPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {members && (
+        <Modal
+          size="wide"
+          title={`Employees — ${members.training.name}`}
+          onClose={() => setMembers(null)}
+        >
+          <div className="small muted" style={{ marginBottom: 12 }}>
+            <span className="mono">{members.training.code}</span> ·{" "}
+            {members.rows === null
+              ? "Loading…"
+              : `${members.rows.length} employee(s) have completed this training`}
+            {members.rows?.length > 0 && (
+              <>
+                {" · "}
+                <b style={{ color: "var(--ok)" }}>
+                  {members.rows.filter((r) => r.status === "valid").length} valid
+                </b>
+                {" · "}
+                <b style={{ color: "var(--warn)" }}>
+                  {members.rows.filter((r) => r.status === "expiring").length}{" "}
+                  expiring
+                </b>
+                {" · "}
+                <b style={{ color: "var(--danger)" }}>
+                  {members.rows.filter((r) => r.status === "expired").length}{" "}
+                  expired
+                </b>
+              </>
+            )}
+          </div>
+
+          {members.error && <Alert type="error">{members.error}</Alert>}
+
+          {members.rows === null ? (
+            <Spinner label="Loading employees…" />
+          ) : members.rows.length === 0 ? (
+            <div className="empty">
+              No employee has been assigned this training yet.
+            </div>
+          ) : (
+            <>
+              {/* desktop / tablet: one line per employee */}
+              <div
+                className="table-wrap dtable"
+                style={{ maxHeight: "58vh", overflowY: "auto" }}
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th className="wrap">Employee</th>
+                      <th>Department</th>
+                      <th>Completed</th>
+                      <th>Valid till</th>
+                      <th>Status</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {members.rows.map((r) => (
+                      <tr key={r.id}>
+                        <td className="wrap">
+                          <div style={{ fontWeight: 600 }}>
+                            {r.employee_name}
+                            {!r.employee_active && (
+                              <span
+                                className="pill unknown"
+                                style={{ marginLeft: 8 }}
+                              >
+                                Inactive
+                              </span>
+                            )}
+                          </div>
+                          <div className="tiny muted mono">
+                            {r.employee_uid} · {r.employee_id}
+                          </div>
+                        </td>
+                        <td>{r.department || "—"}</td>
+                        <td className="mono tiny">
+                          {r.completed_on ? formatDate(r.completed_on) : "—"}
+                        </td>
+                        <td className="mono tiny">
+                          {r.expires_on ? formatDate(r.expires_on) : "No expiry"}
+                        </td>
+                        <td>
+                          <StatusPill status={r.status} />
+                        </td>
+                        <td className="actions">
+                          <Link
+                            className="btn sm ghost"
+                            to={`/admin/employees/${r.employee_uid}/badge`}
+                            onClick={() => setMembers(null)}
+                            title="Open this employee's badge"
+                          >
+                            <Icon name="qrcode" />{" "}
+                            <span className="btn-label">View badge</span>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* mobile: one card per employee, no horizontal scrolling */}
+              <div className="mlist" style={{ maxHeight: "58vh", overflowY: "auto" }}>
+                {members.rows.map((r) => (
+                  <div className="mcard" key={r.id}>
+                    <div className="mcard-head">
+                      <div className="mcard-title">
+                        {r.employee_name}
+                        <span className="sub mono">
+                          {r.employee_uid} · {r.employee_id}
+                        </span>
+                      </div>
+                      <StatusPill status={r.status} />
+                    </div>
+                    <div className="mcard-rows">
+                      <div className="r">
+                        <span>Department</span>
+                        <span>{r.department || "—"}</span>
+                      </div>
+                      <div className="r">
+                        <span>Completed</span>
+                        <span>
+                          {r.completed_on ? formatDate(r.completed_on) : "—"}
+                        </span>
+                      </div>
+                      <div className="r">
+                        <span>Valid till</span>
+                        <span>
+                          {r.expires_on ? formatDate(r.expires_on) : "No expiry"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mcard-actions">
+                      <Link
+                        className="btn sm ghost"
+                        to={`/admin/employees/${r.employee_uid}/badge`}
+                        onClick={() => setMembers(null)}
+                      >
+                        <Icon name="qrcode" /> View badge
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </Modal>
       )}
 

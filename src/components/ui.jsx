@@ -43,7 +43,8 @@ export function Empty({ children = "Nothing here yet." }) {
   return <div className="empty">{children}</div>;
 }
 
-export function Modal({ title, children, onClose, footer }) {
+/** `size="wide"` for modals holding a data table — see .modal.wide in styles.css. */
+export function Modal({ title, children, onClose, footer, size = "" }) {
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose?.();
     window.addEventListener("keydown", onKey);
@@ -56,7 +57,10 @@ export function Modal({ title, children, onClose, footer }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`modal ${size}`.trim()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="card-head">
           <div className="card-title">{title}</div>
           <button className="btn sm ghost" onClick={onClose} aria-label="Close">

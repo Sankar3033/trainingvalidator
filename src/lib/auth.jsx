@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import { TOKEN_KEY, USER_KEY } from "./config";
+import { resetPrefetch } from "./prefetch";
 
 const AuthContext = createContext(null);
 
@@ -21,6 +22,8 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    // Drop the warmed admin data so the next sign-in starts clean.
+    resetPrefetch();
     setToken("");
     setUser(null);
   }, []);

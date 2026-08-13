@@ -4,6 +4,7 @@ import Icon from "../../components/Icon";
 import { Alert, Field, Spinner } from "../../components/ui";
 import { api } from "../../lib/api";
 import { todayISO } from "../../lib/format";
+import { cached, invalidate, KEYS } from "../../lib/prefetch";
 
 const BLANK = {
   name: "",
@@ -43,9 +44,12 @@ export default function EmployeeFormPage() {
 
   useEffect(() => {
     let alive = true;
+    // Catalog and departments come from the warmed cache — on a normal
+    // navigation from the employees list, only getEmployee hits the network,
+    // and adding a new employee needs no request at all.
     Promise.all([
-      api.listTrainings(),
-      api.departments().catch(() => []),
+      cached(KEYS.trainings, () => api.listTrainings()),
+      cached(KEYS.departments, () => api.departments()).catch(() => []),
       isEdit ? api.getEmployee(uid) : Promise.resolve(null),
     ])
       .then(([cat, deps, emp]) => {
@@ -157,6 +161,9 @@ export default function EmployeeFormPage() {
         remarks: r.remarks || "",
       }));
       const payload = { ...form, trainings };
+
+      // The department field is free text — a save can introduce a new one.
+      invalidate(KEYS.departments);
 
       if (isEdit) {
         await api.updateEmployee(uid, payload);

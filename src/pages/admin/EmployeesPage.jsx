@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Icon from "../../components/Icon";
 import { Alert, Confirm, Spinner } from "../../components/ui";
 import { api } from "../../lib/api";
+import { cached, invalidate, KEYS, signalFirstPaint } from "../../lib/prefetch";
 
 export default function EmployeesPage() {
   const [data, setData] = useState({ items: [], total: 0, page: 1, page_size: 25 });
@@ -13,10 +14,13 @@ export default function EmployeesPage() {
   const [department, setDepartment] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [departments, setDepartments] = useState([]);
+  const [listReady, setListReady] = useState(false);
   const [page, setPage] = useState(1);
   const [confirmDel, setConfirmDel] = useState(null);
   const [busy, setBusy] = useState(false);
 
+  // This is the console's landing page, so it loads on its own — nothing else
+  // is requested until it has painted (see lib/prefetch.js).
   const load = useCallback(() => {
     setLoading(true);
     api
@@ -29,7 +33,12 @@ export default function EmployeesPage() {
       })
       .then(setData)
       .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setListReady(true);
+        // Employees are on screen — release the background warm-up queue.
+        signalFirstPaint();
+      });
   }, [q, department, statusFilter, page]);
 
   useEffect(() => {
@@ -37,9 +46,15 @@ export default function EmployeesPage() {
     return () => clearTimeout(t);
   }, [load, q]);
 
+  // Deliberately NOT fetched on mount: the employee list must own the network
+  // until it has painted. Once it has, this shares the warm-up's request for
+  // the same key (cached() dedupes), so the dropdown fills with no extra call.
   useEffect(() => {
-    api.departments().then(setDepartments).catch(() => {});
-  }, [data.total]);
+    if (!listReady) return;
+    cached(KEYS.departments, () => api.departments())
+      .then(setDepartments)
+      .catch(() => {});
+  }, [listReady]);
 
   const doDelete = async () => {
     setBusy(true);
@@ -47,6 +62,8 @@ export default function EmployeesPage() {
       await api.deleteEmployee(confirmDel.uid);
       setNotice(`Deleted ${confirmDel.name} (${confirmDel.uid})`);
       setConfirmDel(null);
+      // That may have removed the last member of a department.
+      invalidate(KEYS.departments);
       load();
     } catch (e) {
       setError(e.message);

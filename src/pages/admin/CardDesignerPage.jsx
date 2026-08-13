@@ -3,6 +3,8 @@ import { AssetsCardFront } from "../../components/AssetsCard";
 import Icon from "../../components/Icon";
 import { Alert, Field, Spinner } from "../../components/ui";
 import { api } from "../../lib/api";
+import { cached, invalidate, KEYS } from "../../lib/prefetch";
+import EmailNotifications from "./EmailNotifications";
 
 // Max emergency-contact rows the card is designed to hold. UI-enforced only.
 const MAX_CONTACTS = 4;
@@ -15,8 +17,7 @@ export default function CardDesignerPage() {
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    api
-      .getCardConfig()
+    cached(KEYS.cardConfig, () => api.getCardConfig())
       .then((c) => setCfg(normalise(c)))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -78,6 +79,7 @@ export default function CardDesignerPage() {
     setNotice("");
     try {
       await api.saveCardConfig(cfg);
+      invalidate(KEYS.cardConfig); // the badge page reads this from cache
       setNotice("Card config saved successfully!");
     } catch (e) {
       setError(e.message);
@@ -193,6 +195,9 @@ export default function CardDesignerPage() {
             */}
         </div>
       </div>
+
+      {/* Sits below the card config — separate concern, separate save button. */}
+      <EmailNotifications onError={setError} onNotice={setNotice} />
     </>
   );
 }

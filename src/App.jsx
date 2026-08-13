@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import AdminLayout from "./pages/admin/AdminLayout";
 import EmployeesPage from "./pages/admin/EmployeesPage";
 import EmployeeFormPage from "./pages/admin/EmployeeFormPage";
+import BulkEditPage from "./pages/admin/BulkEditPage";
 import BadgePage from "./pages/admin/BadgePage";
 import TrainingsPage from "./pages/admin/TrainingsPage";
 import ConsoleUsersPage from "./pages/admin/ConsoleUsersPage";
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="employees/new" element={<EmployeeFormPage />} />
         <Route path="employees/:uid/edit" element={<EmployeeFormPage />} />
         <Route path="employees/:uid/badge" element={<BadgePage />} />
+        <Route path="bulk" element={<BulkEditPage />} />
         <Route path="trainings" element={<TrainingsPage />} />
         <Route path="card" element={<CardDesignerPage />} />
         <Route

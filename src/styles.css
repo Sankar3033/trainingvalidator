@@ -897,6 +897,38 @@ td.actions {
   padding: 24px;
 }
 
+/* Data-table modals: take the width the screen actually has, so rows read on
+   one line instead of wrapping into a horizontal scrollbar. */
+.modal.wide {
+  width: min(1180px, 96vw);
+}
+.modal.wide .table-wrap {
+  overflow-x: auto;
+}
+.modal.wide table {
+  width: 100%;
+  min-width: 0;
+}
+.modal.wide td,
+.modal.wide th {
+  white-space: nowrap;
+}
+/* The employee cell is the only one allowed to wrap. */
+.modal.wide td.wrap,
+.modal.wide th.wrap {
+  white-space: normal;
+  min-width: 190px;
+}
+
+@media (max-width: 720px) {
+  .modal,
+  .modal.wide {
+    width: 100%;
+    padding: 16px;
+    max-height: 94vh;
+  }
+}
+
 /* ==========================================================================
    EXACT CARD TEMPLATE STYLES (Matching Assets/style.css)
    ========================================================================== */
@@ -2009,3 +2041,149 @@ input[type="date"] {
   .codesearch-btn { height: 46px; font-size: 14.5px; }
 }
 
+
+/* ==========================================================================
+   BULK EDIT — roster picker (left) + editable rows (right)
+   Desktop spreads to the full content width; below 960px the two panes stack
+   and every row collapses to a single column.
+   ========================================================================== */
+.bulk-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.bulk-actions { flex-wrap: wrap; }
+
+.bulk-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+/* ---- left: picker ---- */
+.bulk-picker {
+  position: sticky;
+  top: 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  /* Fill the viewport below the header, so the list scrolls on its own. */
+  max-height: calc(100vh - var(--header-h) - 40px);
+  overflow: hidden;
+}
+.bulk-picker-search {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  background: #ffffff;
+  flex: 0 0 auto;
+}
+.bulk-picker-search input[type="search"] { width: 100%; }
+.bulk-picker-tools { margin-top: 8px; gap: 6px; }
+.bulk-picker-tools .btn { flex: 1; }
+.bulk-picker-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 120px;
+}
+.bulk-picker-foot {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.bulk-picker .picker-row .code { font-size: 11.5px; color: var(--muted); }
+
+/* ---- right: editable rows ---- */
+.bulk-editor { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.bulk-new-note { margin: 0; }
+
+.bulk-row { padding: 14px 16px; border-left: 3px solid var(--line-strong); }
+.bulk-row.is-new { border-left-color: var(--primary); background: var(--primary-soft); }
+.bulk-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.bulk-row-id { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bulk-row-id b { color: var(--ink); font-size: 15px; }
+.bulk-row-head .checkbox.tiny { margin: 0; font-size: 12.5px; }
+
+/* auto-fit: as many columns as the width allows, never overflowing. */
+.bulk-row-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 12px;
+}
+.bulk-row-grid .field { margin-bottom: 0; }
+.bulk-row-grid input { height: 38px; }
+
+.bulk-row-trainings {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line-strong);
+}
+.bulk-tr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.bulk-tr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tr-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  border: 1px solid var(--line-strong);
+  background: #ffffff;
+  white-space: nowrap;
+}
+.tr-chip b { font-weight: 700; font-family: var(--mono); font-size: 11px; }
+.tr-chip span { color: var(--muted); }
+.tr-chip.valid { border-color: #86efac; background: var(--ok-soft); color: var(--ok); }
+.tr-chip.expiring { border-color: #fde68a; background: var(--warn-soft); color: var(--warn); }
+.tr-chip.expired { border-color: #fca5a5; background: var(--danger-soft); color: var(--danger); }
+
+/* training editor rows inside the modal */
+.bulk-tr-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 140px 140px 92px;
+  gap: 8px;
+  align-items: center;
+  cursor: default;
+}
+.bulk-tr-row input[type="date"] { height: 34px; }
+
+@media (max-width: 960px) {
+  .bulk-layout { grid-template-columns: minmax(0, 1fr); }
+  .bulk-picker {
+    position: static;
+    max-height: 46vh;
+  }
+}
+
+@media (max-width: 720px) {
+  .bulk-head { flex-direction: column; align-items: stretch; }
+  .bulk-actions .btn { flex: 1; }
+  /* One field per row on a phone — no side-by-side squeeze. */
+  .bulk-row-grid { grid-template-columns: minmax(0, 1fr); }
+  .bulk-row { padding: 12px; }
+  .bulk-row-head { align-items: flex-start; }
+  .bulk-tr-row {
+    grid-template-columns: 18px minmax(0, 1fr);
+    row-gap: 6px;
+  }
+  .bulk-tr-row input[type="date"],
+  .bulk-tr-row .pill { grid-column: 2; }
+}
