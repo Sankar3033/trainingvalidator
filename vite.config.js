@@ -12,7 +12,8 @@ export default defineConfig({
     proxy: {
       // Dev talks to the hosted (cloud) backend on Vercel.
       "/api": {
-        target: "https://trainingvalidatorbackend.vercel.app",
+        target:
+          "https://trainingvalidatorbackend-1xte173qt-sankar3033s-projects.vercel.app",
         changeOrigin: true,
         secure: true,
       },
